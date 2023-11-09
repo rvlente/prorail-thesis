@@ -1,16 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(my_project)
+project(act-impl)
 
-# Abseil requires C++14
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Process Abseil's CMake build system
-add_subdirectory(abseil-cpp)
-add_subdirectory(s2geometry)
+add_subdirectory(deps/absl)
+add_subdirectory(deps/s2)
 
-add_executable(hello_world hello_world.cc)
+add_executable(main main.cpp)
 
-# Declare dependency on the absl::strings library
-target_link_libraries(hello_world absl::strings)
-target_link_libraries(hello_world s2)
+target_link_libraries(main absl::strings)
+target_link_libraries(main s2)

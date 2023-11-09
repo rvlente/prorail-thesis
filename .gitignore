@@ -162,5 +162,3 @@ cython_debug/
 # Don't commit data.
 data/
 shape/
-gotest/
-s2/
