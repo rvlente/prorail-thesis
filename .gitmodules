@@ -1,0 +1,6 @@
+[submodule "act-impl/s2geometry"]
+	path = act-impl/s2geometry
+	url = https://github.com/google/s2geometry.git
+[submodule "act-impl/abseil-cpp"]
+	path = act-impl/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git
