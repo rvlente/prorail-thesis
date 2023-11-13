@@ -1,6 +1,6 @@
-[submodule "act-impl/deps/s2"]
-	path = act-impl/deps/s2
+[submodule "index-benchmarking/deps/s2"]
+	path = index-benchmarking/deps/s2
 	url = https://github.com/google/s2geometry.git
-[submodule "act-impl/deps/absl"]
-	path = act-impl/deps/absl
+[submodule "index-benchmarking/deps/absl"]
+	path = index-benchmarking/deps/absl
 	url = https://github.com/abseil/abseil-cpp.git
