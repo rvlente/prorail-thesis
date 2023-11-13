@@ -4,3 +4,6 @@
 [submodule "index-benchmarking/deps/absl"]
 	path = index-benchmarking/deps/absl
 	url = https://github.com/abseil/abseil-cpp.git
+[submodule "index-benchmarking/deps/geos"]
+	path = index-benchmarking/deps/geos
+	url = https://github.com/libgeos/geos.git
