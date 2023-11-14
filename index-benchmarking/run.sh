@@ -9,8 +9,6 @@ if [[ "$1" =~ ^(geos-strtree|geos-quadtree|s2-shapeindex|h3-cindex)$ ]]
     exit 1
 fi
 
-rm -rf build
-mkdir build
 cd build
 
 cmake ..
