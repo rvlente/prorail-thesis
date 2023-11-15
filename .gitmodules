@@ -1,6 +1,6 @@
-[submodule "index-benchmarking/libs/s2"]
-	path = index-benchmarking/libs/s2
-	url = https://github.com/google/s2geometry.git
+[submodule "index-benchmarking/libs/shapelib"]
+	path = index-benchmarking/libs/shapelib
+	url = https://github.com/OSGeo/shapelib
 [submodule "index-benchmarking/libs/absl"]
 	path = index-benchmarking/libs/absl
 	url = https://github.com/abseil/abseil-cpp.git
@@ -10,6 +10,6 @@
 [submodule "index-benchmarking/libs/h3"]
 	path = index-benchmarking/libs/h3
 	url = https://github.com/uber/h3.git
-[submodule "index-benchmarking/libs/shapelib"]
-	path = index-benchmarking/libs/shapelib
-	url = https://github.com/OSGeo/shapelib
+[submodule "index-benchmarking/libs/s2"]
+	path = index-benchmarking/libs/s2
+	url = https://github.com/google/s2geometry.git
