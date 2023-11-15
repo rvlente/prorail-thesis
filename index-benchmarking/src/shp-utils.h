@@ -1,7 +1,11 @@
 #pragma once
 #include <iostream>
+#include <memory>
 #include <functional>
+#include <exception>
 #include "shapefil.h"
+
+typedef std::unique_ptr<SHPObject, decltype(&SHPDestroyObject)> SHPObject_ptr;
 
 enum ShapeType
 {
@@ -25,19 +29,21 @@ ShapeType toShapeType(int shapeType)
     }
 }
 
-ulong processShapes(const char *shapeFile, std::function<void(const SHPObject *, const ShapeType)> processFunc)
+std::vector<SHPObject_ptr> loadShapefile(const char *shapeFile, ShapeType *shapeType)
 {
+    std::vector<SHPObject_ptr> shapes;
+
     // Read shapefile.
     SHPHandle handle = SHPOpen(shapeFile, "rb");
     if (handle == NULL)
     {
-        std::cout << "Failed to load shapefile! Exiting." << std::endl;
-        return 1;
+        std::cerr << "Failed to open shapefile " << shapeFile << "." << std::endl;
+        return shapes;
     }
 
     int nEntities, rawShapeType;
     SHPGetInfo(handle, &nEntities, &rawShapeType, NULL, NULL);
-    ShapeType shapeType = toShapeType(rawShapeType);
+    *shapeType = toShapeType(rawShapeType);
 
     // Read objects.
     for (int i = 0; i < nEntities; i++)
@@ -45,17 +51,14 @@ ulong processShapes(const char *shapeFile, std::function<void(const SHPObject *,
         SHPObject *obj = SHPReadObject(handle, i);
         if (obj == NULL)
         {
-            std::cout << "Failed to read object " << i << "! Exiting." << std::endl;
-            break;
+            std::cerr << "Failed to read object " << i << "." << std::endl;
+            continue;
         }
 
-        processFunc(obj, shapeType);
-        SHPDestroyObject(obj);
+        shapes.push_back(SHPObject_ptr(obj, SHPDestroyObject));
     }
 
     // Close handle.
     SHPClose(handle);
-
-    // Return.
-    return 0;
+    return shapes;
 }
