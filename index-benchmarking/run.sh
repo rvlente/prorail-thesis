@@ -9,9 +9,11 @@ if [[ "$1" =~ ^(geos-strtree|geos-quadtree|s2-shapeindex|h3-cindex)$ ]]
     exit 1
 fi
 
+export CMAKE_PREFIX_PATH="/usr/lib/x86_64-linux-gnu:$CMAKE_PREFIX_PATH"
+
 mkdir -p build
 cd build
 
 cmake ..
 cmake --build . --target $1
-./$1
+./$@

@@ -37,7 +37,6 @@ std::vector<SHPObject_ptr> loadShapefile(const char *shapeFile, ShapeType *shape
     SHPHandle handle = SHPOpen(shapeFile, "rb");
     if (handle == NULL)
     {
-        std::cerr << "Failed to open shapefile " << shapeFile << "." << std::endl;
         return shapes;
     }
 
@@ -51,7 +50,7 @@ std::vector<SHPObject_ptr> loadShapefile(const char *shapeFile, ShapeType *shape
         SHPObject *obj = SHPReadObject(handle, i);
         if (obj == NULL)
         {
-            std::cerr << "Failed to read object " << i << "." << std::endl;
+            std::cout << "ERROR: Failed to read object " << i << "." << std::endl;
             continue;
         }
 

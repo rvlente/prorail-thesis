@@ -41,11 +41,24 @@ std::unique_ptr<S2Shape> makeS2Polygon(SHPObject_ptr obj)
 
 int main(int argc, char **argv)
 {
-    std::cout << "Loading shapes... " << std::flush;
+    if (argc < 2)
+    {
+        std::cout << "Usage: " << argv[0] << " <shapefile>" << std::endl;
+        return 0;
+    }
+
+    const char *shapefile = argv[1];
+    std::cout << "Loading shapes from shapefile [" << shapefile << "]... " << std::flush;
 
     // Read shapes from shapefile.
     ShapeType shapeType;
-    auto shapes = loadShapefile("../../notebooks/shape/lines/lines", &shapeType);
+    auto shapes = loadShapefile(shapefile, &shapeType);
+
+    if (shapes.empty())
+    {
+        std::cout << "Failed to load shapes from shapefile [" << shapefile << "]." << std::endl;
+        return 0;
+    }
 
     // Convert shapes to S2 shapes.
     std::vector<std::unique_ptr<S2Shape>> s2shapes;
@@ -81,8 +94,6 @@ int main(int argc, char **argv)
 
     MutableS2ShapeIndex index;
 
-    S2ContainsPointQueryOptions options(S2VertexModel::CLOSED);
-
     auto start = std::chrono::high_resolution_clock::now();
 
     for (auto &shape : s2shapes)
@@ -91,6 +102,7 @@ int main(int argc, char **argv)
     }
 
     // MutableS2ShapeIndex is lazy, and will only build the index when a query is performed.
+    S2ContainsPointQueryOptions options(S2VertexModel::CLOSED);
     MakeS2ContainsPointQuery(&index, options).Contains(S2LatLng::FromDegrees(0, 0).ToPoint());
 
     auto end = std::chrono::high_resolution_clock::now();
