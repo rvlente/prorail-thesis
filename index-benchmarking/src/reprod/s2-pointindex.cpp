@@ -1,14 +1,9 @@
 #include <memory>
 #include <chrono>
 #include "s2/s2point.h"
-#include "s2/s2point_vector_shape.h"
-#include "s2/s2polyline.h"
-#include "s2/s2polygon.h"
-#include "s2/mutable_s2shape_index.h"
-#include "s2/s2contains_point_query.h"
-#include "gdal-utils.h"
 #include "s2/s2closest_point_query.h"
 #include "s2/s2earth.h"
+#include "utils/gdal.h"
 
 int main(int argc, char **argv)
 {
