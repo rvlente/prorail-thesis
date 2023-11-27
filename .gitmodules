@@ -1,6 +1,6 @@
-[submodule "index-benchmarking/libs/shapelib"]
-	path = index-benchmarking/libs/shapelib
-	url = https://github.com/OSGeo/shapelib
+[submodule "index-benchmarking/libs/gdal"]
+	path = index-benchmarking/libs/gdal
+	url = https://github.com/OSGeo/gdal.git
 [submodule "index-benchmarking/libs/absl"]
 	path = index-benchmarking/libs/absl
 	url = https://github.com/abseil/abseil-cpp.git
@@ -13,6 +13,3 @@
 [submodule "index-benchmarking/libs/s2"]
 	path = index-benchmarking/libs/s2
 	url = https://github.com/google/s2geometry.git
-[submodule "index-benchmarking/libs/proj"]
-	path = index-benchmarking/libs/proj
-	url = https://github.com/OSGeo/PROJ

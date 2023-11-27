@@ -22,23 +22,19 @@ geom::CoordinateSequence getCoordinateSequence(const ProjWrapper *coordinateTran
     return seq;
 }
 
-std::unique_ptr<geom::Geometry> makeGeosPoint(const ProjWrapper *coordinateTransformer, const geom::GeometryFactory *factory, SHPObject_ptr obj)
+std::unique_ptr<geom::Geometry> makeGeosPoint(const geom::GeometryFactory *factory, const geom::CoordinateSequence &seq)
 {
-    auto seq = getCoordinateSequence(coordinateTransformer, std::move(obj));
     return factory->createPoint(seq[0]);
 }
 
-std::unique_ptr<geom::Geometry> makeGeosLine(const ProjWrapper *coordinateTransformer, const geom::GeometryFactory *factory, SHPObject_ptr obj)
+std::unique_ptr<geom::Geometry> makeGeosLine(const geom::GeometryFactory *factory, const geom::CoordinateSequence &seq)
 {
-    auto seq = getCoordinateSequence(coordinateTransformer, std::move(obj));
     return factory->createLineString(seq);
 }
 
-std::unique_ptr<geom::Geometry> makeGeosPolygon(const ProjWrapper *coordinateTransformer, const geom::GeometryFactory *factory, SHPObject_ptr obj)
+std::unique_ptr<geom::Geometry> makeGeosPolygon(const geom::GeometryFactory *factory, const geom::CoordinateSequence &seq)
 {
-    auto seq = getCoordinateSequence(coordinateTransformer, std::move(obj));
-    auto geosLinearRing = factory->createLinearRing(seq);
-    return factory->createPolygon(std::move(geosLinearRing));
+    return factory->createPolygon(factory->createLinearRing(seq));
 }
 
 int main(int argc, char **argv)
@@ -65,7 +61,7 @@ int main(int argc, char **argv)
     // Convert shapes to Geometry shapes.
     std::vector<std::unique_ptr<geom::Geometry>> geosShapes;
 
-    std::function<std::unique_ptr<geom::Geometry>(const ProjWrapper *, const geom::GeometryFactory *, SHPObject_ptr)> makeGeosGeometry;
+    std::function<std::unique_ptr<geom::Geometry>(const geom::GeometryFactory *, const geom::CoordinateSequence &)> makeGeosGeometry;
     std::string shapeName;
 
     switch (shapeType)
@@ -89,7 +85,8 @@ int main(int argc, char **argv)
 
     for (auto &shape : shapes)
     {
-        geosShapes.push_back(makeGeosGeometry(&transformer, factory.get(), std::move(shape)));
+        auto seq = getCoordinateSequence(&transformer, std::move(shape));
+        geosShapes.push_back(makeGeosGeometry(factory.get(), seq));
     }
 
     std::cout << "Finished. Loaded " << shapes.size() << " " << shapeName << "." << std::endl;
@@ -103,6 +100,7 @@ int main(int argc, char **argv)
 
     for (auto &shape : geosShapes)
     {
+        // std::cout << shape->isEmpty() << std::endl;
         index.insert(shape->getEnvelopeInternal(), nullptr);
     }
 

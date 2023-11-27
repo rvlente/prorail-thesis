@@ -10,37 +10,6 @@
 #include "s2/s2closest_point_query.h"
 #include "s2/s2earth.h"
 
-// std::vector<S2Point> getPoints(SHPObject_ptr obj)
-// {
-//     std::vector<S2Point> points;
-//     for (int i = 0; i < obj->nVertices; i++)
-//     {
-//         points.push_back(S2LatLng::FromDegrees(obj->padfY[i], obj->padfX[i]).ToPoint());
-//     }
-//     return points;
-// }
-
-// std::unique_ptr<S2Shape> makeS2Point(SHPObject_ptr obj)
-// {
-//     auto points = getPoints(std::move(obj));
-//     return std::make_unique<S2PointVectorShape>(points);
-// }
-
-// std::unique_ptr<S2Shape> makeS2Polyline(SHPObject_ptr obj)
-// {
-//     auto points = getPoints(std::move(obj));
-//     auto polyline = new S2Polyline(points);
-//     return std::make_unique<S2Polyline::Shape>(polyline);
-// }
-
-// std::unique_ptr<S2Shape> makeS2Polygon(SHPObject_ptr obj)
-// {
-//     auto points = getPoints(std::move(obj));
-//     points.pop_back();
-//     auto polygon = new S2Polygon(std::make_unique<S2Loop>(points));
-//     return std::make_unique<S2Polygon::Shape>(polygon);
-// }
-
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -72,12 +41,10 @@ int main(int argc, char **argv)
         index.Add(S2LatLng::FromDegrees(point->getX(), point->getY()).ToPoint(), 0);
     }
 
-    // MutableS2ShapeIndex is lazy, and will only build the index when a query is performed.
-    // S2ContainsPointQueryOptions options(S2VertexModel::CLOSED);
-    // MakeS2ContainsPointQuery(&index, options).Contains(S2LatLng::FromDegrees(0, 0).ToPoint());
+    // S2PointIndex is lazy, and will only build the index when a query is performed.
     S2ClosestPointQuery<int> query(&index);
     query.mutable_options()->set_max_distance(
-        S1Angle::Radians(S2Earth::KmToRadians(1)));
+        S1Angle::Radians(S2Earth::KmToRadians(0.001)));
 
     auto end = std::chrono::high_resolution_clock::now();
 
