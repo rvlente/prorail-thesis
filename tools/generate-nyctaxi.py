@@ -1,5 +1,6 @@
-import requests
 import duckdb
+import requests
+import struct
 
 
 def download_files():
@@ -20,7 +21,7 @@ def download_files():
                     f.write(result.content)
 
 
-def create_gpkg():
+def _setup_duckdb():
     create_data_query = """
     DROP TABLE IF EXISTS nyctaxi_2009;
     DROP TABLE IF EXISTS nyctaxi_2010;
@@ -42,21 +43,39 @@ def create_gpkg():
     );
     """
 
+    conn = duckdb.connect(database=":memory:", read_only=False)
+    conn.execute("INSTALL spatial; LOAD spatial;")
+    conn.execute(create_data_query)
+    return conn
+
+
+def create_binary():
+    conn = _setup_duckdb()
+
+    df = conn.sql("SELECT * FROM nyctaxi").pl()
+
+    with open("output.bin", "wb") as f:
+        for i, (lat, lon) in enumerate(df.iter_rows()):
+            f.write(struct.pack("f", lat))
+            f.write(struct.pack("f", lon))
+
+
+def create_gpkg():
     write_data_query = """
-    COPY nyctaxi TO 'data/nyctaxi.gpkg' WITH (
+    COPY (SELECT ST_Point(lon, lat) FROM nyctaxi) TO 'data/nyctaxi.gpkg' WITH (
         FORMAT GDAL,
         DRIVER 'GPKG',
         LAYER_CREATION_OPTIONS 'SPATIAL_INDEX=NO'
     );
     """
 
-    conn = duckdb.connect(database=":memory:", read_only=False)
-    conn.execute("INSTALL spatial; LOAD spatial;")
-    conn.execute(create_data_query)
+    conn = _setup_duckdb()
+
     conn.execute(write_data_query)
     conn.close()
 
 
 if __name__ == "__main__":
     download_files()
-    create_gpkg()
+    # create_gpkg()
+    create_binary()
