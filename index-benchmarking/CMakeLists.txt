@@ -14,10 +14,6 @@ add_subdirectory(libs/geos)
 add_subdirectory(libs/s2)
 add_subdirectory(libs/h3)
 
-add_executable(reprod-geos-strtree  src/reprod/geos-strtree.cpp)
-add_executable(reprod-geos-quadtree src/reprod/geos-quadtree.cpp)
-add_executable(reprod-s2-pointindex src/reprod/s2-pointindex.cpp)
+add_executable(01-reprod src/01-vpanday2020-reprod.cpp)
 
-target_link_libraries(geos-strtree  GDAL::GDAL PROJ::proj geos)
-target_link_libraries(geos-quadtree GDAL::GDAL PROJ::proj geos)
-target_link_libraries(s2-pointindex GDAL::GDAL s2)
+target_link_libraries(01-reprod s2)
