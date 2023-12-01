@@ -76,6 +76,6 @@ def create_gpkg():
 
 
 if __name__ == "__main__":
-    # download_files()
+    download_files()
     # create_gpkg()
     create_binary()
