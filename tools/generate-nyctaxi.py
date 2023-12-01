@@ -36,7 +36,7 @@ def _setup_duckdb():
     FROM 'data/nyc-taxi/yellow_tripdata_2010-*.parquet';
 
     CREATE TABLE nyctaxi AS
-    SELECT ST_Point(lat, lon) FROM (
+    SELECT lat, lon FROM (
         SELECT lat, lon FROM nyctaxi_2009
         UNION ALL BY NAME
         SELECT lat, lon FROM nyctaxi_2010
@@ -52,12 +52,12 @@ def _setup_duckdb():
 def create_binary():
     conn = _setup_duckdb()
 
-    df = conn.sql("SELECT * FROM nyctaxi").pl()
+    df = conn.sql("SELECT * FROM nyctaxi WHERE lat BETWEEN 30 AND 50 AND lon BETWEEN -80 AND -70").pl()
 
     with open("output.bin", "wb") as f:
         for i, (lat, lon) in enumerate(df.iter_rows()):
-            f.write(struct.pack("f", lat))
-            f.write(struct.pack("f", lon))
+            f.write(struct.pack("d", lat))
+            f.write(struct.pack("d", lon))
 
 
 def create_gpkg():
@@ -76,6 +76,6 @@ def create_gpkg():
 
 
 if __name__ == "__main__":
-    download_files()
+    # download_files()
     # create_gpkg()
     create_binary()

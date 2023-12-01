@@ -15,9 +15,9 @@ std::vector<Coord> loadCoordinatesFromFile(const char *binFile)
 
     std::ifstream fin(binFile, std::ios::binary);
 
-    float lat, lon;
+    double lat, lon;
 
-    while (fin.read(reinterpret_cast<char *>(&lat), sizeof(float)) && fin.read(reinterpret_cast<char *>(&lon), sizeof(float)))
+    while (fin.read(reinterpret_cast<char *>(&lat), sizeof(double)) && fin.read(reinterpret_cast<char *>(&lon), sizeof(double)))
     {
         coordinates.push_back({lat, lon});
     }

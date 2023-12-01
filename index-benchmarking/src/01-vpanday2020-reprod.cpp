@@ -5,6 +5,38 @@
 #include "s2/s2point.h"
 #include "s2/s2point_index.h"
 #include "utils/bin.h"
+#include "utils/progress.h"
+
+void benchmarkS2PointIndex(const std::vector<Coord> &points)
+{
+    std::cout << "Creating S2Points from coordinates..." << std::endl;
+
+    std::vector<S2Point> s2points;
+    ProgressBar progress1(points.size());
+    progress1.start();
+
+    for (int i = 0; i < points.size(); i++)
+    {
+        s2points.push_back(S2LatLng::FromDegrees(points[i].lat, points[i].lon).ToPoint());
+        progress1.update(i);
+    }
+
+    progress1.finish();
+    std::cout << "Finished. Building index..." << std::endl;
+
+    S2PointIndex<int> index;
+    ProgressBar progress2(s2points.size());
+    progress2.start();
+
+    for (int i = 0; i < s2points.size(); i++)
+    {
+        index.Add(s2points[i], i);
+        progress2.update(i);
+    }
+
+    progress2.finish();
+    std::cout << "Finished. Built index of size " << index.SpaceUsed() << " bytes." << std::endl;
+}
 
 int main(int argc, char **argv)
 {
@@ -16,36 +48,13 @@ int main(int argc, char **argv)
 
     const char *data_file = argv[1];
 
-    // Load coordinates from file.
-    std::cout << "Loading nyc-taxi dataset..." << std::endl;
-    auto coordinates = loadCoordinatesFromFile(data_file);
+    // Load nyc-taxi points from file.
+    std::cout << "Loading nyc-taxi dataset..." << std::flush;
+    auto points = loadCoordinatesFromFile(data_file);
+    std::cout << "Done." << std::endl;
 
-    // Create S2 points.
-    std::vector<S2Point> s2points;
-
-    for (const auto &coord : coordinates)
-    {
-        s2points.push_back(S2LatLng::FromDegrees(coord.lat, coord.lon).ToPoint());
-    }
-
-    std::cout << "Finished." << std::endl
-              << "Building index..." << std::endl;
-
-    auto start = std::chrono::high_resolution_clock::now();
-
-    typedef u_char _T;
-    S2PointIndex<_T> index;
-
-    for (const auto &point : s2points)
-    {
-        index.Add(point, 0);
-    }
-
-    auto end = std::chrono::high_resolution_clock::now();
-
-    // Report.
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    std::cout << "Finished. Built index of size " << index.SpaceUsed() << " bytes in " << duration << " ms." << std::endl;
+    // Run benchmarks.
+    benchmarkS2PointIndex(points);
 
     return 0;
 }
