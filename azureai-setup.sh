@@ -1,5 +1,7 @@
 #!/bin/bash
 sudo apt-get update
+git config --global user.name "Robert van Lente"
+git config --global user.email "robertvlente@gmail.com"
 
 # pull submodules
 git submodule init
@@ -13,12 +15,11 @@ done
 # setup venv
 sudo apt-get install python3.8-venv
 python -m venv .venv
-source .venv/bin/activate
 
 # install deps
-pip install requests duckdb polars pyarrow
+.venv/bin/pip install requests duckdb polars pyarrow
 
 # run dataset script
 mkdir -r data/nyc-taxi
-python tools/generate-nyctaxi.py
+.venv/bin/python tools/generate-nyctaxi.py
 mv output.bin data/nyc-taxi/nyc-taxi.bin

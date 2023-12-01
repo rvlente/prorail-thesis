@@ -52,7 +52,7 @@ def _setup_duckdb():
 def create_binary():
     conn = _setup_duckdb()
 
-    df = conn.sql("SELECT * FROM nyctaxi WHERE lat BETWEEN 30 AND 50 AND lon BETWEEN -80 AND -70").pl()
+    df = conn.sql("SELECT * FROM nyctaxi WHERE lat BETWEEN 30 AND 50 AND lon BETWEEN -80 AND -70 LIMIT 30000000;").pl()
 
     with open("output.bin", "wb") as f:
         for i, (lat, lon) in enumerate(df.iter_rows()):
