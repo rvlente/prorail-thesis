@@ -18,7 +18,7 @@ apt-get install libsqlite3 libssl-dev
 ```bash
 cd libs/proj
 mkdir build && cd build
-cmake ..
+cmake --DBUILD_TESTING ..
 cmake --build .
 sudo cmake --build . --target install
 ```

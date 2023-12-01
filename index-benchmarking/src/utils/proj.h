@@ -18,11 +18,8 @@ public:
         proj_destroy(P);
     }
 
-    std::tuple<double, double> transform(std::tuple<double, double> c) const
+    std::tuple<double, double> transform(double x, double y) const
     {
-        double x, y;
-        std::tie(x, y) = c;
-
         auto a = proj_coord(x, y, 0, 0);
         auto b = proj_trans(P, PJ_FWD, a);
 

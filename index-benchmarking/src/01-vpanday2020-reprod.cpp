@@ -9,6 +9,7 @@
 #include "geos/geom/GeometryFactory.h"
 #include "utils/bin.h"
 #include "utils/progress.h"
+#include "utils/proj.h"
 
 void benchmarkS2PointIndex(const std::vector<Coord> &points)
 {
@@ -38,20 +39,23 @@ void benchmarkS2PointIndex(const std::vector<Coord> &points)
     }
 
     progress2.finish();
-    std::cout << "Finished. Built index of size " << index.SpaceUsed() << " bytes." << std::endl;
+    std::cout << "Finished. Built index of size " << index.SpaceUsed() << " bytes." << std::endl
+              << std::endl;
 }
 
 std::vector<std::unique_ptr<geos::geom::Point>> _get_geos_points(const std::vector<Coord> &points)
 {
     std::vector<std::unique_ptr<geos::geom::Point>> geos_points;
     auto factory = geos::geom::GeometryFactory::create();
+    ProjWrapper transformer("EPSG:4326", "EPSG:3857");
 
     ProgressBar progress1(points.size());
     progress1.start();
 
     for (int i = 0; i < points.size(); i++)
     {
-        geos_points.push_back(factory->createPoint(geos::geom::Coordinate(points[i].lat, points[i].lon)));
+        auto xy = transformer.transform(points[i].lat, points[i].lon);
+        geos_points.push_back(factory->createPoint(geos::geom::Coordinate(std::get<0>(xy), std::get<1>(xy))));
         progress1.update(i);
     }
 
@@ -80,7 +84,8 @@ void benchmarkGeosSTRtree(const std::vector<Coord> &points)
     index.build();
     progress2.finish();
 
-    std::cout << "Finished. Built index of size " << sizeof(index) << " bytes." << std::endl;
+    std::cout << "Finished. Built index of size " << sizeof(index) << " bytes." << std::endl
+              << std::endl;
 }
 
 void benchmarkGeosQuadtree(const std::vector<Coord> &points)
@@ -103,7 +108,8 @@ void benchmarkGeosQuadtree(const std::vector<Coord> &points)
 
     progress2.finish();
 
-    std::cout << "Finished. Built index of size " << sizeof(index) << " bytes." << std::endl;
+    std::cout << "Finished. Built index of size " << sizeof(index) << " bytes." << std::endl
+              << std::endl;
 }
 
 int main(int argc, char **argv)
