@@ -1,3 +1,6 @@
+[submodule "index-benchmarking/libs/proj"]
+	path = index-benchmarking/libs/proj
+	url = https://github.com/OSGeo/PROJ.git
 [submodule "index-benchmarking/libs/gdal"]
 	path = index-benchmarking/libs/gdal
 	url = https://github.com/OSGeo/gdal.git

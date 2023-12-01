@@ -5,7 +5,7 @@ project(index-benchmarking)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# find_package(PROJ REQUIRED CONFIG)
+find_package(PROJ REQUIRED CONFIG)
 # find_package(GDAL REQUIRED CONFIG)
 
 add_subdirectory(libs/absl)

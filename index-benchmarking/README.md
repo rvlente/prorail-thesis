@@ -10,7 +10,17 @@ First, install these prerequisites.
 
 ```bash
 apt-get update && apt-get upgrade
-apt-get install libsqlite3 libssl-dev libproj-dev
+apt-get install libsqlite3 libssl-dev
+```
+
+### PROJ
+
+```bash
+cd libs/proj
+mkdir build && cd build
+cmake ..
+cmake --build .
+sudo cmake --build . --target install
 ```
 
 ### GDAL
@@ -20,5 +30,5 @@ cd libs/gdal
 mkdir build && cd build
 cmake ..
 cmake --build .
-cmake --build . --target install
+sudo cmake --build . --target install
 ```
