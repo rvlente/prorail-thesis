@@ -32,3 +32,15 @@ cmake ..
 cmake --build .
 sudo cmake --build . --target install
 ```
+
+### gperftools
+
+```bash
+cd libs/gperftools
+./autogen.sh
+./configure
+make
+sudo make install
+make clean
+make distclean
+```
