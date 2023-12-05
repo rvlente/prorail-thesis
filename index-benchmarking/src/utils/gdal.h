@@ -22,7 +22,7 @@ public:
         OGRFeature::DestroyFeature(feature);
     }
 
-    OGRPoint *getPoint()
+    OGRPoint *get_point()
     {
         if (geometry->getGeometryType() != wkbPoint)
             return nullptr;
@@ -30,7 +30,7 @@ public:
         return geometry->toPoint();
     }
 
-    OGRLineString *getLineString()
+    OGRLineString *get_line_string()
     {
         if (geometry->getGeometryType() != wkbLineString)
             return nullptr;
@@ -38,7 +38,7 @@ public:
         return geometry->toLineString();
     }
 
-    OGRPolygon *getPolygon()
+    OGRPolygon *get_polygon()
     {
         if (geometry->getGeometryType() != wkbPolygon)
             return nullptr;
@@ -68,7 +68,7 @@ public:
         return std::make_unique<GDALGeometryIterator>(dataset, layerName);
     }
 
-    bool hasNext()
+    bool has_next()
     {
         return (currentFeature = layer->GetNextFeature()) != NULL;
     }

@@ -14,6 +14,6 @@ add_subdirectory(libs/geos)
 add_subdirectory(libs/s2)
 # add_subdirectory(libs/h3)
 
-add_executable(01-reprod src/01-vpanday2020-reprod.cpp)
+add_executable(exp01 src/01-vpanday2020-reprod.cpp)
 
-target_link_libraries(01-reprod PROJ::proj geos s2)
+target_link_libraries(exp01 PROJ::proj tcmalloc geos s2)

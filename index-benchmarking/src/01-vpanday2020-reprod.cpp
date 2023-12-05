@@ -1,6 +1,7 @@
 #include <chrono>
 #include <memory>
 #include <tuple>
+#include <gperftools/heap-profiler.h>
 #include "s2/s2latlng.h"
 #include "s2/s2point.h"
 #include "s2/s2point_index.h"
@@ -11,7 +12,7 @@
 #include "utils/progress.h"
 #include "utils/proj.h"
 
-void benchmarkS2PointIndex(const std::vector<Coord> &points)
+void benchmark_S2PointIndex(const std::vector<Coord> &points)
 {
     std::cout << "Creating S2Points from coordinates..." << std::endl;
 
@@ -64,51 +65,71 @@ std::vector<std::unique_ptr<geos::geom::Point>> _get_geos_points(const std::vect
     return geos_points;
 }
 
-void benchmarkGeosSTRtree(const std::vector<Coord> &points)
+void _build_strtree(const std::vector<std::unique_ptr<geos::geom::Point>> &points)
+{
+    ProgressBar progress(points.size() * 2); // Geometry insertion takes up less than half of the total progress.
+    progress.start();
+
+    auto index = new geos::index::strtree::STRtree();
+
+    for (int i = 0; i < points.size(); i++)
+    {
+        index->insert(points[i]->getEnvelopeInternal(), nullptr);
+        progress.update(i);
+    }
+
+    progress.finish();
+}
+
+void benchmark_strtree(const std::vector<Coord> &points)
 {
     std::cout << "Creating GEOS Geometry from coordinates..." << std::endl;
     auto geos_points = _get_geos_points(points);
 
     std::cout << "Finished. Building STRtree..." << std::endl;
 
-    geos::index::strtree::STRtree index;
-    ProgressBar progress2(geos_points.size());
-    progress2.start();
+    HeapProfilerStart("strtree");
 
-    for (int i = 0; i < geos_points.size(); i++)
-    {
-        index.insert(geos_points[i]->getEnvelopeInternal(), nullptr);
-        progress2.update(i);
-    }
+    _build_strtree(geos_points);
 
-    index.build();
-    progress2.finish();
+    HeapProfilerDump("finished");
+    HeapProfilerStop();
 
-    std::cout << "Finished. Built index of size " << sizeof(index) << " bytes." << std::endl
+    std::cout << "Finished. Check strtree heap profile for memory usage." << std::endl
               << std::endl;
 }
 
-void benchmarkGeosQuadtree(const std::vector<Coord> &points)
+void _build_quadtree(const std::vector<std::unique_ptr<geos::geom::Point>> &points)
+{
+    ProgressBar progress(points.size() * 2); // Geometry insertion takes up less than half of the total progress.
+    progress.start();
+
+    geos::index::quadtree::Quadtree index;
+
+    for (int i = 0; i < points.size(); i++)
+    {
+        index.insert(points[i]->getEnvelopeInternal(), reinterpret_cast<void *>(i));
+        progress.update(i);
+    }
+
+    progress.finish();
+}
+
+void benchmark_quadtree(const std::vector<Coord> &points)
 {
     std::cout << "Creating GEOS Geometry from coordinates..." << std::endl;
     auto geos_points = _get_geos_points(points);
 
     std::cout << "Finished. Building Quadtree..." << std::endl;
 
-    geos::index::quadtree::Quadtree index;
+    HeapProfilerStart("quadtree");
 
-    ProgressBar progress2(geos_points.size());
-    progress2.start();
+    _build_quadtree(geos_points);
 
-    for (int i = 0; i < geos_points.size(); i++)
-    {
-        index.insert(geos_points[i]->getEnvelopeInternal(), reinterpret_cast<void *>(i));
-        progress2.update(i);
-    }
+    HeapProfilerDump("finished");
+    HeapProfilerStop();
 
-    progress2.finish();
-
-    std::cout << "Finished. Built index of size " << sizeof(index) << " bytes." << std::endl
+    std::cout << "Finished. Check quadtree heap profile for memory usage." << std::endl
               << std::endl;
 }
 
@@ -123,14 +144,14 @@ int main(int argc, char **argv)
     const char *data_file = argv[1];
 
     // Load nyc-taxi points from file.
-    std::cout << "Loading nyc-taxi dataset..." << std::flush;
-    auto points = loadCoordinatesFromFile(data_file);
+    std::cout << "Loading nyc-taxi dataset... " << std::flush;
+    auto points = load_coordinates(data_file);
     std::cout << "Done." << std::endl;
 
     // Run benchmarks.
-    benchmarkS2PointIndex(points);
-    benchmarkGeosSTRtree(points);
-    benchmarkGeosQuadtree(points);
+    // benchmarkS2PointIndex(points);
+    benchmark_strtree(points);
+    // benchmarkGeosQuadtree(points);
 
     return 0;
 }

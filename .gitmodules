@@ -16,3 +16,6 @@
 [submodule "index-benchmarking/libs/s2"]
 	path = index-benchmarking/libs/s2
 	url = https://github.com/google/s2geometry.git
+[submodule "index-benchmarking/libs/gperftools"]
+	path = index-benchmarking/libs/gperftools
+	url = https://github.com/gperftools/gperftools.git
