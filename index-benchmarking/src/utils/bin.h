@@ -9,7 +9,7 @@ struct Coord
     double lon;
 };
 
-std::vector<Coord> loadCoordinatesFromFile(const char *binFile)
+std::vector<Coord> load_coordinates(const char *binFile)
 {
     std::vector<Coord> coordinates;
 
