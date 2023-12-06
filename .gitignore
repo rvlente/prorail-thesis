@@ -164,4 +164,4 @@ cython_debug/
 
 # Don't commit data.
 data/
-heapprofile/
+heapprofiles/

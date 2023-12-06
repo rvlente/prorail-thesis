@@ -12,7 +12,7 @@
 #include "utils/progress.h"
 #include "utils/proj.h"
 
-void benchmark_S2PointIndex(const std::vector<Coord> &points)
+void benchmark_s2pointindex(const std::vector<Coord> &points)
 {
     std::cout << "Creating S2Points from coordinates..." << std::endl;
 
@@ -44,7 +44,7 @@ void benchmark_S2PointIndex(const std::vector<Coord> &points)
               << std::endl;
 }
 
-std::vector<std::unique_ptr<geos::geom::Point>> _get_geos_points(const std::vector<Coord> &points)
+std::vector<std::unique_ptr<geos::geom::Point>> get_geos_points(const std::vector<Coord> &points)
 {
     std::vector<std::unique_ptr<geos::geom::Point>> geos_points;
     auto factory = geos::geom::GeometryFactory::create();
@@ -65,7 +65,7 @@ std::vector<std::unique_ptr<geos::geom::Point>> _get_geos_points(const std::vect
     return geos_points;
 }
 
-void _build_strtree(const std::vector<std::unique_ptr<geos::geom::Point>> &points)
+void build_strtree(const std::vector<std::unique_ptr<geos::geom::Point>> &points)
 {
     ProgressBar progress(points.size() * 2); // Geometry insertion takes up less than half of the total progress.
     progress.start();
@@ -84,22 +84,21 @@ void _build_strtree(const std::vector<std::unique_ptr<geos::geom::Point>> &point
 void benchmark_strtree(const std::vector<Coord> &points)
 {
     std::cout << "Creating GEOS Geometry from coordinates..." << std::endl;
-    auto geos_points = _get_geos_points(points);
+    auto geos_points = get_geos_points(points);
 
     std::cout << "Finished. Building STRtree..." << std::endl;
 
-    HeapProfilerStart("strtree");
+    HeapProfilerStart("heapprofile/strtree");
 
-    _build_strtree(geos_points);
+    build_strtree(geos_points);
 
-    HeapProfilerDump("finished");
     HeapProfilerStop();
 
     std::cout << "Finished. Check strtree heap profile for memory usage." << std::endl
               << std::endl;
 }
 
-void _build_quadtree(const std::vector<std::unique_ptr<geos::geom::Point>> &points)
+void build_quadtree(const std::vector<std::unique_ptr<geos::geom::Point>> &points)
 {
     ProgressBar progress(points.size() * 2); // Geometry insertion takes up less than half of the total progress.
     progress.start();
@@ -118,15 +117,14 @@ void _build_quadtree(const std::vector<std::unique_ptr<geos::geom::Point>> &poin
 void benchmark_quadtree(const std::vector<Coord> &points)
 {
     std::cout << "Creating GEOS Geometry from coordinates..." << std::endl;
-    auto geos_points = _get_geos_points(points);
+    auto geos_points = get_geos_points(points);
 
     std::cout << "Finished. Building Quadtree..." << std::endl;
 
-    HeapProfilerStart("quadtree");
+    HeapProfilerStart("heapprofile/quadtree");
 
-    _build_quadtree(geos_points);
+    build_quadtree(geos_points);
 
-    HeapProfilerDump("finished");
     HeapProfilerStop();
 
     std::cout << "Finished. Check quadtree heap profile for memory usage." << std::endl
@@ -149,9 +147,9 @@ int main(int argc, char **argv)
     std::cout << "Done." << std::endl;
 
     // Run benchmarks.
-    // benchmarkS2PointIndex(points);
+    benchmark_s2pointindex(points);
     benchmark_strtree(points);
-    // benchmarkGeosQuadtree(points);
+    benchmark_quadtree(points);
 
     return 0;
 }

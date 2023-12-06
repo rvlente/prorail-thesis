@@ -1,16 +1,20 @@
 #!/bin/bash
-# sudo apt-get update
-# git config --global user.name "Robert van Lente"
-# git config --global user.email "robertvlente@gmail.com"
+sudo apt-get update
+git config --global user.name "Robert van Lente"
+git config --global user.email "robertvlente@gmail.com"
 
-# # pull submodules
-# git submodule init
-# git submodule update
+# pull submodules
+git submodule init
+git submodule update
 
-# # deactivate conda envs
-# for i in $(seq ${CONDA_SHLVL}); do
-#     conda deactivate
-# done
+# deactivate conda envs
+for i in $(seq ${CONDA_SHLVL}); do
+    conda deactivate
+done
+
+conda remove --name azureml_py38 --all
+conda remove --name azureml_py38_PT_TF --all
+conda remove --name azureml_py310_sdkv2 --all
 
 # setup venv
 sudo apt-get install python3.8-venv
