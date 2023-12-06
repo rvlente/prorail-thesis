@@ -20,8 +20,8 @@ cmake --build . --target $1
 ./$@
 
 echo "Analyzing heap profile dumps..."
-pprof --text --inuse_space $1 heapprofile/$(ls heapprofile | grep strtree | tail -1) | grep _build_strtree
-pprof --text --inuse_space $1 heapprofile/$(ls heapprofile | grep quadtree | tail -1) | grep _build_quadtree
+pprof --text --inuse_space $1 heapprofile/$(ls heapprofile | grep strtree | tail -1) | grep build_strtree
+pprof --text --inuse_space $1 heapprofile/$(ls heapprofile | grep quadtree | tail -1) | grep build_quadtree
 
 cd ..
 cp -r build/heapprofile heapprofiles/$1-$(date +%Y%m%dT%H%M%S)
