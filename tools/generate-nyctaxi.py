@@ -1,6 +1,22 @@
+"""
+generate-nyctaxi.py
+
+This script provides functions to download the 2009-2010 NYC TLC Taxi dataset and write 
+it to either GeoPackage or binary format.
+
+Usage:
+
+    python -i generate-nyctaxi.py
+    >>> DATA_FOLDER = Path('data/nyc-taxi')
+    >>> download_files(DATA_FOLDER / 'raw')
+    >>> create_gpkg(DATA_FOLDER / 'raw', DATA_FOLDER / 'nyc-taxi-30m.gpkg', 30_000_000)
+    >>> create_binary(DATA_FOLDER / 'raw', DATA_FOLDER / 'nyc-taxi-30m.bin', 30_000_000)
+"""
+
 import duckdb
 import requests
 import struct
+from pathlib import Path # imported for convenience
 
 
 def download_files():
@@ -21,61 +37,55 @@ def download_files():
                     f.write(result.content)
 
 
-def _setup_duckdb():
-    create_data_query = """
+def _setup_duckdb(input_folder):
+    create_data_query = f"""
     DROP TABLE IF EXISTS nyctaxi_2009;
     DROP TABLE IF EXISTS nyctaxi_2010;
     DROP TABLE IF EXISTS nyctaxi;
 
     CREATE TABLE nyctaxi_2009 AS
     SELECT Start_Lon AS lon, Start_Lat AS lat
-    FROM 'data/nyc-taxi/yellow_tripdata_2009-*.parquet';
+    FROM '{input_folder}/yellow_tripdata_2009-*.parquet';
 
     CREATE TABLE nyctaxi_2010 AS
     SELECT pickup_longitude AS lon, pickup_latitude AS lat
-    FROM 'data/nyc-taxi/yellow_tripdata_2010-*.parquet';
+    FROM '{input_folder}/yellow_tripdata_2010-*.parquet';
 
     CREATE TABLE nyctaxi AS
     SELECT lat, lon FROM (
         SELECT lat, lon FROM nyctaxi_2009
         UNION ALL BY NAME
         SELECT lat, lon FROM nyctaxi_2010
-    );
+    )
+    WHERE lat BETWEEN 30 AND 50 AND lon BETWEEN -80 AND -70;
     """
 
     conn = duckdb.connect(database=":memory:", read_only=False)
-    conn.execute("INSTALL spatial; LOAD spatial;")
     conn.execute(create_data_query)
     return conn
 
 
-def create_binary():
-    conn = _setup_duckdb()
+def create_binary(raw_folder, target_file, limit=None):
+    conn = _setup_duckdb(raw_folder)
+    df = conn.sql(f"SELECT * FROM nyctaxi{'' if limit is None else f' USING SAMPLE {limit}'};").pl()
 
-    df = conn.sql("SELECT * FROM nyctaxi WHERE lat BETWEEN 30 AND 50 AND lon BETWEEN -80 AND -70 LIMIT 30000000;").pl()
-
-    with open("output.bin", "wb") as f:
+    with open(target_file, "wb") as f:
         for i, (lat, lon) in enumerate(df.iter_rows()):
             f.write(struct.pack("d", lat))
             f.write(struct.pack("d", lon))
 
 
-def create_gpkg():
-    write_data_query = """
-    COPY (SELECT ST_Point(lon, lat) FROM nyctaxi) TO 'data/nyctaxi.gpkg' WITH (
+def create_gpkg(raw_folder, target_file, limit=None):
+    write_data_query = f"""
+    COPY (SELECT ST_Point(lon, lat) FROM nyctaxi{'' if limit is None else f' USING SAMPLE {limit}'}) 
+    TO '{target_file}' WITH (
         FORMAT GDAL,
         DRIVER 'GPKG',
         LAYER_CREATION_OPTIONS 'SPATIAL_INDEX=NO'
     );
     """
 
-    conn = _setup_duckdb()
-
+    conn = _setup_duckdb(raw_folder)
+    conn.execute("INSTALL spatial; LOAD spatial;")
     conn.execute(write_data_query)
     conn.close()
-
-
-if __name__ == "__main__":
-    download_files()
-    # create_gpkg()
-    create_binary()
