@@ -100,7 +100,7 @@ void benchmark_strtree(const std::vector<Coord> &points)
 
 void build_quadtree(const std::vector<std::unique_ptr<geos::geom::Point>> &points)
 {
-    ProgressBar progress(points.size() * 2); // Geometry insertion takes up less than half of the total progress.
+    ProgressBar progress(points.size());
     progress.start();
 
     geos::index::quadtree::Quadtree index;
