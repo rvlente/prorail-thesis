@@ -1,6 +1,7 @@
 #pragma once
 #include <chrono>
 #include <iostream>
+#include <iomanip>
 
 class ProgressBar
 {
