@@ -1,4 +1,6 @@
 #pragma once
+#include <atomic>
+#include <thread>
 #include <chrono>
 #include <iostream>
 #include <iomanip>
@@ -6,34 +8,18 @@
 class ProgressBar
 {
 private:
-    const unsigned short WIDTH = 70;
-    size_t n_iterations;
-    size_t every;
-    std::chrono::_V2::system_clock::time_point start_time;
+    std::thread t_print;
+    std::atomic<bool> running;
+    std::atomic<int> total;
+    std::atomic<int> progress;
 
-public:
-    ProgressBar(size_t n_iterations) : n_iterations(n_iterations)
+    static void print_progress(size_t i, size_t n, std::chrono::_V2::system_clock::time_point start_time)
     {
-        every = n_iterations / 10000;
-    }
-
-    void start()
-    {
-        start_time = std::chrono::high_resolution_clock::now();
-        update(0, true);
-    }
-
-    void update(size_t i, bool force = false)
-    {
-        if (!force && i % every != 0)
-        {
-            return;
-        }
-
+        static unsigned short WIDTH = 70;
         auto now = std::chrono::high_resolution_clock::now();
         auto seconds_passed = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();
 
-        const float progress = (float)i / (float)n_iterations;
+        float p = (float)i / (float)n;
 
         std::cout << "["
                   << std::setw(2) << std::setfill('0') << seconds_passed / 3600 // HH
@@ -43,7 +29,7 @@ public:
                   << std::setw(2) << std::setfill('0') << seconds_passed % 60 // SS
                   << "|";
 
-        int pos = WIDTH * progress;
+        int pos = WIDTH * p;
         for (int i = 0; i < WIDTH; ++i)
         {
             if (i < pos)
@@ -53,13 +39,65 @@ public:
             else
                 std::cout << " ";
         }
-        std::cout << "] " << int(progress * 100.0) << "% \r";
-        std::cout.flush();
+        std::cout << "] " << int(p * 100.0) << "% \r" << std::flush;
     }
 
-    void finish()
+    void main()
     {
-        update(n_iterations, true);
+        auto start_time = std::chrono::high_resolution_clock::now();
+
+        while (running.load())
+        {
+            print_progress(progress.load(), total.load(), start_time);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        print_progress(1, 1, start_time);
+
         std::cout << std::endl;
+    }
+
+public:
+    ~ProgressBar()
+    {
+        if (t_print.joinable())
+        {
+            running.store(false);
+            t_print.join();
+        }
+    }
+
+    void start()
+    {
+        if (running.load())
+        {
+            return;
+        }
+
+        // Start thread first.
+        progress.store(0);
+        total.store(1);
+        running.store(true);
+        t_print = std::thread(&ProgressBar::main, this);
+    }
+
+    void set(size_t i, size_t n)
+    {
+        progress.store(i);
+        total.store(n);
+    }
+
+    auto bind()
+    {
+        return std::bind(&ProgressBar::set, this, std::placeholders::_1, std::placeholders::_2);
+    }
+
+    void stop()
+    {
+        if (t_print.joinable())
+        {
+            running.store(false);
+            t_print.join();
+        }
     }
 };

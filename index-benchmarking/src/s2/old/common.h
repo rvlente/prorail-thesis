@@ -1,11 +1,15 @@
 #pragma once
 #include <vector>
 #include "s2/s2latlng.h"
-#include "s2/s2point.h"
-#include "s2/s2point_index.h"
+#include "s2/s2point_vector_shape.h"
+#include "s2/s2closest_point_query.h"
+#include "s2/s2closest_edge_query.h"
+#include "s2/s2contains_point_query.h"
+#include "s2/s2boolean_operation.h"
 #include "../utils/progress.h"
+#include "../utils/data.h"
 
-std::vector<S2Point> create_s2_points(const std::vector<Coord> &points)
+std::unique_ptr<S2PointVectorShape> create_s2_points(const std::vector<Coord> &points)
 {
     std::cout << "Creating S2Points from coordinates..." << std::endl;
 
@@ -20,6 +24,8 @@ std::vector<S2Point> create_s2_points(const std::vector<Coord> &points)
     }
 
     progress.finish();
+    std::cout << "Finished." << std::endl
+              << std::endl;
 
-    return s2_points;
+    return std::make_unique<S2PointVectorShape>(s2_points);
 }

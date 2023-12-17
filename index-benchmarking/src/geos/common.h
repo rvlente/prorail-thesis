@@ -4,15 +4,27 @@
 #include "geos/geom/GeometryFactory.h"
 #include "../utils/progress.h"
 #include "../utils/proj.h"
-#include "../utils/bin.h"
+#include "../utils/data.h"
 
-std::vector<std::unique_ptr<geos::geom::Point>> create_geos_points(const std::vector<Coord> &points)
+template <typename TIndex, typename TGeom>
+class IndexExperiment
+{
+public:
+    static IndexExperiment load(const char *geomFile, const char *);
+
+private:
+    IndexExperiment()
+    {
+    }
+};
+
+std::vector<std::unique_ptr<geos::geom::Point>> create_geos_points(const std::vector<Coord> &points, const char *crs)
 {
     std::cout << "Creating GEOS Geometry from coordinates..." << std::endl;
 
     std::vector<std::unique_ptr<geos::geom::Point>> geos_points;
     auto factory = geos::geom::GeometryFactory::create();
-    ProjWrapper transformer("EPSG:4326", "EPSG:32118");
+    ProjWrapper transformer("EPSG:4326", crs);
 
     ProgressBar progress(points.size());
     progress.start();
