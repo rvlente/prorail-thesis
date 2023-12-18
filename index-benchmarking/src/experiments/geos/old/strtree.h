@@ -23,7 +23,7 @@ std::shared_ptr<geos::index::strtree::STRtree> build_strtree(const std::vector<s
 
 void run_distance_queries(std::shared_ptr<geos::index::strtree::STRtree> index, std::vector<DistanceQuery> &dqueries)
 {
-    ProgressBar progress(dqueries.size());
+    ProgressTracker progress(dqueries.size());
     progress.start();
 
     for (size_t i = 0; i < dqueries.size(); i++)

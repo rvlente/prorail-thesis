@@ -11,7 +11,7 @@
 
 std::shared_ptr<geos::index::quadtree::Quadtree> build_quadtree(const std::vector<std::unique_ptr<geos::geom::Point>> &points)
 {
-    ProgressBar progress(points.size());
+    ProgressTracker progress(points.size());
     progress.start();
 
     auto index = std::make_shared<geos::index::quadtree::Quadtree>();

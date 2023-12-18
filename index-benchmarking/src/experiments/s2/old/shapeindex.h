@@ -11,7 +11,7 @@ std::shared_ptr<MutableS2ShapeIndex> build_s2shapeindex(std::unique_ptr<S2PointV
 {
     auto index = std::make_unique<MutableS2ShapeIndex>();
 
-    ProgressBar progress(2);
+    ProgressTracker progress(2);
     progress.start();
 
     index->Add(std::move(points));
@@ -27,7 +27,7 @@ std::shared_ptr<MutableS2ShapeIndex> build_s2shapeindex(std::unique_ptr<S2PointV
 
 void run_distance_queries(std::shared_ptr<MutableS2ShapeIndex> index, const std::vector<DistanceQuery> &dqueries)
 {
-    ProgressBar progress(dqueries.size());
+    ProgressTracker progress(dqueries.size());
     progress.start();
 
     S2ClosestEdgeQuery query(index.get());
@@ -51,7 +51,7 @@ void run_distance_queries(std::shared_ptr<MutableS2ShapeIndex> index, const std:
 
 void run_range_queries(std::shared_ptr<MutableS2ShapeIndex> index, std::vector<RangeQuery> &rqueries)
 {
-    // ProgressBar progress(rqueries.size());
+    // ProgressTracker progress(rqueries.size());
     // progress.start();
 
     // S2BooleanOperation query(S2BooleanOperation::OpType::INTERSECTION);
