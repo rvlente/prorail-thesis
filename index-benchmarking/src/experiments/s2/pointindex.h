@@ -4,15 +4,13 @@
 #include "s2/s2point_index.h"
 #include "s2/s2closest_point_query.h"
 #include "s2/s2earth.h"
-#include "../utils/experiment.h"
+#include "common.h"
+#include "../experiment.h"
 
-typedef DistanceQuery<S2Point> S2DistanceQuery;
-typedef RangeQuery<S2LatLngRect> S2RangeQuery;
-
-class S2PointIndexRunner : public BaseExperimentRunner<S2PointIndex<int>, S2Point, S2DistanceQuery, S2RangeQuery>
+class S2PointIndexExperimentRunner : public BaseExperimentRunner<S2PointIndex<int>, S2Point, S2DistanceQuery, S2RangeQuery>
 {
 public:
-    S2PointIndexRunner(const char *name) : BaseExperimentRunner(name){};
+    S2PointIndexExperimentRunner(const char *name) : BaseExperimentRunner(name){};
 
 private:
     std::vector<S2Point> load_geometry(const char *file_path, std::function<void(size_t, size_t)> progress)

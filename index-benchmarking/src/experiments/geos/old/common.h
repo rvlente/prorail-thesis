@@ -6,18 +6,6 @@
 #include "../utils/proj.h"
 #include "../utils/data.h"
 
-template <typename TIndex, typename TGeom>
-class IndexExperiment
-{
-public:
-    static IndexExperiment load(const char *geomFile, const char *);
-
-private:
-    IndexExperiment()
-    {
-    }
-};
-
 std::vector<std::unique_ptr<geos::geom::Point>> create_geos_points(const std::vector<Coord> &points, const char *crs)
 {
     std::cout << "Creating GEOS Geometry from coordinates..." << std::endl;

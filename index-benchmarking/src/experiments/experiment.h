@@ -4,10 +4,10 @@
 #include <thread>
 #include <atomic>
 #include <gperftools/heap-profiler.h>
-#include "progress.h"
-#include "data.h"
-#include "s2/s2point_index.h"
-#include "s2/s2point.h"
+#include <s2/s2point_index.h>
+#include <s2/s2point.h>
+#include "../utils/progress.h"
+#include "../utils/data.h"
 
 template <typename TPoint>
 struct DistanceQuery
