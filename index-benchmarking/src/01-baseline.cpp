@@ -2,22 +2,20 @@
 #include <memory>
 #include <tuple>
 #include <iostream>
-#include "s2/pointindex.h"
+#include "experiments/s2/pointindex.h"
+#include "experiments/geos/strtree.h"
 
 int main(int argc, char **argv)
 {
-    if (argc != 4)
-    {
-        std::cout << "Usage: " << argv[0] << " <data_file> <dq_file> <rq_file>" << std::endl;
-        return 1;
-    }
+    const char *data_file = "../data/nyc-taxi/nyc-taxi-100m.bin";
+    const char *distance_query_file = "../data/nyc-taxi/queries/taxi_distance_0.0001.csv";
+    const char *range_query_file = "../data/nyc-taxi/queries/taxi_range_0.0001.csv";
 
-    const char *data_file = argv[1];
-    const char *distance_query_file = argv[2];
-    const char *range_query_file = argv[3];
+    auto s2pointindex_runner = S2PointIndexExperimentRunner("s2pointindex");
+    s2pointindex_runner.run("nyc-taxi-100m", data_file, distance_query_file, range_query_file);
 
-    auto s2runner = S2PointIndexRunner("s2pointindex");
-    s2runner.run("nyc-taxi-30m", data_file, distance_query_file, range_query_file);
+    auto strtree_runner = STRtreeExperimentRunner("geos_strtree", "EPSG:32118");
+    strtree_runner.run("nyc-taxi-100m", data_file, distance_query_file, range_query_file);
 
     return 0;
 }

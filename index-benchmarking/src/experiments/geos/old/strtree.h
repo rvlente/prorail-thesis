@@ -8,9 +8,6 @@
 
 std::shared_ptr<geos::index::strtree::STRtree> build_strtree(const std::vector<std::unique_ptr<geos::geom::Point>> &points)
 {
-    ProgressBar progress(points.size() * 2); // Geometry insertion takes up less than half of the total progress.
-    progress.start();
-
     auto index = new geos::index::strtree::STRtree();
 
     for (int i = 0; i < points.size(); i++)

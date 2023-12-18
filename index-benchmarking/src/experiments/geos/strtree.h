@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include "geos/geom/GeometryFactory.h"
 #include "geos/index/strtree/STRtree.h"
 #include "common.h"
 #include "../experiment.h"
@@ -8,31 +9,33 @@
 #include "../../utils/proj.h"
 #include "../../utils/data.h"
 
-using namespace geos;
-
-class STRtreeExperimentRunner : public BaseExperimentRunner<index::STRtree, std::unique_ptr<geos::geom::Point>, GeosDistanceQuery, GeosRangeQuery>
+class STRtreeExperimentRunner : public BaseExperimentRunner<geos::index::strtree::STRtree, std::unique_ptr<geos::geom::Point>, GeosDistanceQuery, GeosRangeQuery>
 {
 private:
     ProjWrapper _transformer;
     geos::geom::GeometryFactory::Ptr _factory;
 
 public:
-    STRtreeExperimentRunner(const char *name, const char *crs) : _transformer("EPSG:4326", crs), BaseExperimentRunner(name)
+    STRtreeExperimentRunner(const char *name, const char *crs) : BaseExperimentRunner(name), _transformer("EPSG:4326", crs)
     {
-        _factory = geom::GeometryFactory.create();
+        _factory = geos::geom::GeometryFactory::create();
     };
 
 private:
     std::vector<std::unique_ptr<geos::geom::Point>> load_geometry(const char *file_path, std::function<void(size_t, size_t)> progress)
     {
         auto coordinates = load_coordinates(file_path);
+        std::vector<std::unique_ptr<geos::geom::Point>> geos_points;
 
-        for (int i = 0; i < points.size(); i++)
+        for (size_t i = 0; i < coordinates.size(); i++)
         {
-            auto xy = _transformer.transform(points[i].lat, points[i].lon);
+            auto latlon = coordinates[i];
+            auto xy = _transformer.transform(latlon.lat, latlon.lon);
             geos_points.push_back(_factory->createPoint(geos::geom::Coordinate(std::get<0>(xy), std::get<1>(xy))));
-            progress(i, points.size());
+            progress(i, coordinates.size());
         }
+
+        return geos_points;
     }
 
     std::vector<GeosDistanceQuery> load_distance_queries(const char *file_path, std::function<void(size_t, size_t)> progress)
@@ -44,9 +47,10 @@ private:
         for (size_t i = 0; i < raw_queries.size(); i++)
         {
             auto q = raw_queries[i];
+            auto xy = _transformer.transform(q.coord.lat, q.coord.lon);
+            auto point = _factory->createPoint(geos::geom::Coordinate(std::get<0>(xy), std::get<1>(xy)));
 
-            queries.push_back({_transformer.transform(q.coord.lat, q.coord.lon),
-                               q.distance});
+            queries.push_back({std::move(point), q.distance});
 
             progress(i, raw_queries.size());
         }
@@ -65,48 +69,49 @@ private:
             auto q = raw_queries[i];
 
             auto xya = _transformer.transform(q.a.lat, q.a.lon);
-            auto xa = std::get<0>(xy);
-            auto ya = std::get<1>(xy);
+            auto xa = std::get<0>(xya);
+            auto ya = std::get<1>(xya);
 
             auto xyb = _transformer.transform(q.b.lat, q.b.lon);
-            auto xb = std::get<0>(xy);
-            auto yb = std::get<1>(xy);
+            auto xb = std::get<0>(xyb);
+            auto yb = std::get<1>(xyb);
 
-            queries.push_back({geos::geom::Envelope rectangle(geos::geom::Coordinate(coord.lat - distance, y - distance),
-                                                              geos::geom::Coordinate(x + distance, y + distance))});
+            queries.push_back({geos::geom::Envelope(geos::geom::Coordinate(xa, ya),
+                                                    geos::geom::Coordinate(xb, yb))});
             progress(i, raw_queries.size());
         }
 
         return queries;
     }
 
-    std::unique_ptr<S2PointIndex<int>> build_index(const std::vector<S2Point> &geometry, std::function<void(size_t, size_t)> progress)
+    std::unique_ptr<geos::index::strtree::STRtree> build_index(const std::vector<std::unique_ptr<geos::geom::Point>> &geometry, std::function<void(size_t, size_t)> progress)
     {
-        auto index = std::make_unique<S2PointIndex<int>>();
+        auto index = std::make_unique<geos::index::strtree::STRtree>();
 
-        for (size_t i = 0; i < geometry.size(); i++)
+        for (int i = 0; i < geometry.size(); i++)
         {
-            index->Add(geometry[i], i);
+            index->insert(geometry[i]->getEnvelopeInternal(), nullptr);
             progress(i, geometry.size());
         }
 
         return index;
     }
 
-    void execute_distance_queries(const index::strtree::STRtree *index, const std::vector<GeosDistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
+    void execute_distance_queries(geos::index::strtree::STRtree *index, const std::vector<GeosDistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
         std::vector<geos::geom::Geometry *> result;
         result.reserve(1e8);
 
         for (size_t i = 0; i < queries.size(); i++)
         {
-            auto coord = queries[i].coord;
+            auto target_point = queries[i].point.get();
             auto distance = queries[i].distance;
-            geos::geom::Envelope rectangle(geos::geom::Coordinate(coord.lat - distance, y - distance),
-                                           geos::geom::Coordinate(x + distance, y + distance));
+
+            geos::geom::Envelope rectangle(geos::geom::Coordinate(target_point->getX() - distance, target_point->getY() - distance),
+                                           geos::geom::Coordinate(target_point->getX() + distance, target_point->getY() + distance));
 
             std::vector<void *> candidates;
-            index.query(rectangle->getEnvelopeInternal(), candidates);
+            index->query(&rectangle, candidates);
 
             for (auto &candidate : candidates)
             {
@@ -118,22 +123,22 @@ private:
             uint64_t res_size = result.size();
             result.clear();
 
-            progress(i, n);
+            progress(i, queries.size());
         }
-
-        progress.finish();
     }
 
-    void execute_range_queries(const S2PointIndex<int> *index, const std::vector<S2RangeQuery> &queries, std::function<void(size_t, size_t)> progress)
+    void execute_range_queries(geos::index::strtree::STRtree *index, const std::vector<GeosRangeQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
-        S2ClosestPointQuery<int> query(index);
+        std::vector<geos::geom::Geometry *> result;
+        result.reserve(1e8);
 
         for (size_t i = 0; i < queries.size(); i++)
         {
-            S2ClosestPointQueryPointTarget target(queries[i].range.GetCenter().ToPoint());
+            std::vector<void *> result;
+            index->query(&queries[i].range, result);
 
-            query.mutable_options()->set_region(&queries[i].range);
-            query.FindClosestPoints(&target);
+            uint64_t res_size = result.size();
+            result.clear();
 
             progress(i, queries.size());
         }

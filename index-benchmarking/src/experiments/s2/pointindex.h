@@ -18,7 +18,7 @@ private:
         auto coordinates = load_coordinates(file_path);
         std::vector<S2Point> s2_points;
 
-        for (int i = 0; i < coordinates.size(); i++)
+        for (size_t i = 0; i < coordinates.size(); i++)
         {
             auto coordinate = coordinates[i];
             s2_points.push_back(S2LatLng::FromDegrees(coordinate.lat, coordinate.lon).ToPoint());
@@ -73,7 +73,7 @@ private:
         return index;
     }
 
-    void execute_distance_queries(const S2PointIndex<int> *index, const std::vector<S2DistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
+    void execute_distance_queries(S2PointIndex<int> *index, const std::vector<S2DistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
         S2ClosestPointQuery<int> query(index);
 
@@ -88,7 +88,7 @@ private:
         }
     }
 
-    void execute_range_queries(const S2PointIndex<int> *index, const std::vector<S2RangeQuery> &queries, std::function<void(size_t, size_t)> progress)
+    void execute_range_queries(S2PointIndex<int> *index, const std::vector<S2RangeQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
         S2ClosestPointQuery<int> query(index);
 

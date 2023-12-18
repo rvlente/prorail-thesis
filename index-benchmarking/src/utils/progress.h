@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <functional>
 #include <thread>
 #include <chrono>
 #include <iostream>
@@ -69,11 +70,6 @@ public:
 
     void start()
     {
-        if (running.load())
-        {
-            return;
-        }
-
         // Start thread first.
         progress.store(0);
         total.store(1);

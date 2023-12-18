@@ -1,6 +1,8 @@
 #pragma once
 #include <tuple>
-#include "geos/geom/GeometryFactory.h"
+#include <memory>
+#include "geos/geom/Envelope.h"
+#include "../experiment.h"
 
-typedef DistanceQuery<std::tuple<double, double>> GeosDistanceQuery;
+typedef DistanceQuery<std::unique_ptr<geos::geom::Point>> GeosDistanceQuery;
 typedef RangeQuery<geos::geom::Envelope> GeosRangeQuery;
