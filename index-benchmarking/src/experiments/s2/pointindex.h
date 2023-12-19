@@ -97,7 +97,7 @@ private:
             S2ClosestPointQueryPointTarget target(queries[i].range.GetCenter().ToPoint());
 
             query.mutable_options()->set_region(&queries[i].range);
-            query.FindClosestPoints(&target);
+            auto result = query.FindClosestPoints(&target);
 
             progress(i, queries.size());
         }

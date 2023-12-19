@@ -6,6 +6,8 @@ export CC=/usr/bin/gcc
 export CXX=/usr/bin/g++
 export OPENSSL_ROOT_DIR=/usr/lib/x86_64-linux-gnu/
 export PERFTOOLS_VERBOSE=-1000 # disable gperftools dump logs
+export HEAP_PROFILE_INUSE_INTERVAL=0 # disable dump intervals
+export HEAP_PROFILE_ALLOCATION_INTERVAL=0
 
 rm -rf tmp
 mkdir -p tmp

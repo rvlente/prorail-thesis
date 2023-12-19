@@ -3,6 +3,7 @@
 #include <memory>
 #include "geos/geom/GeometryFactory.h"
 #include "geos/index/strtree/STRtree.h"
+#include "geos/index/ItemVisitor.h"
 #include "common.h"
 #include "../experiment.h"
 #include "../../utils/progress.h"
@@ -48,9 +49,8 @@ private:
         {
             auto q = raw_queries[i];
             auto xy = _transformer.transform(q.coord.lat, q.coord.lon);
-            auto point = _factory->createPoint(geos::geom::Coordinate(std::get<0>(xy), std::get<1>(xy)));
 
-            queries.push_back({std::move(point), q.distance});
+            queries.push_back({_factory->createPoint(geos::geom::Coordinate(std::get<0>(xy), std::get<1>(xy))), q.distance});
 
             progress(i, raw_queries.size());
         }
@@ -90,17 +90,17 @@ private:
 
         for (int i = 0; i < geometry.size(); i++)
         {
-            index->insert(geometry[i]->getEnvelopeInternal(), nullptr);
+            index->insert(geometry[i]->getEnvelopeInternal(), geometry[i].get());
             progress(i, geometry.size());
         }
 
+        index->build();
         return index;
     }
 
     void execute_distance_queries(geos::index::strtree::STRtree *index, const std::vector<GeosDistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
-        std::vector<geos::geom::Geometry *> result;
-        result.reserve(1e8);
+        std::vector<geos::geom::Point *> result;
 
         for (size_t i = 0; i < queries.size(); i++)
         {
@@ -111,18 +111,19 @@ private:
                                            geos::geom::Coordinate(target_point->getX() + distance, target_point->getY() + distance));
 
             std::vector<void *> candidates;
+
             index->query(&rectangle, candidates);
 
-            for (auto &candidate : candidates)
+            for (const auto &candidate : result)
             {
-                const auto &point = static_cast<geos::geom::Geometry *>(candidate);
+                auto point = static_cast<geos::geom::Point *>(candidate);
                 if (point->isWithinDistance(target_point, distance))
+                {
                     result.push_back(point);
+                }
             }
 
-            uint64_t res_size = result.size();
             result.clear();
-
             progress(i, queries.size());
         }
     }

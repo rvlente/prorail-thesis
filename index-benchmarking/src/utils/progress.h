@@ -109,10 +109,9 @@ public:
         return get_timer_string(seconds_passed);
     }
 
-    inline int get_throughput()
+    inline float get_throughput()
     {
         auto seconds_passed = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
-        auto iterations_per_second = (float)seconds_passed / (float)total.load();
-        return iterations_per_second;
+        return (float)total.load() / (float)seconds_passed;
     }
 };

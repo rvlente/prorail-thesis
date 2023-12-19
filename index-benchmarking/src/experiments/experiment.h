@@ -80,6 +80,7 @@ public:
         auto index = build_index(geometry, pt_build_index.bind());
         pt_build_index.stop();
 
+        HeapProfilerDump("done");
         HeapProfilerStop();
 
         std::cout << "Done. Executing distance queries..." << std::endl;
@@ -102,29 +103,30 @@ public:
                       << "--text "
                       << "--inuse_space "
                       << argv0 << " "
-                      << "heapprofile/$(ls heapprofile | grep " << _name << " | tail -1)" // last dump in folder
-                      << " | grep ::build_index"                                          // extract relevant function
-                      << " | awk -F ' +' '{ print $4 }'";                                 // extract memory allocation field
+                      << "tmp/$(ls tmp | grep " << _name << " | tail -1)" // last dump in folder
+                      << " | grep ::build_index"                          // extract relevant function
+                      << " | awk -F ' +' '{ print $5 }'";                 // extract memory allocation field
 
         auto index_size = exec(pprof_command.str().c_str());
+        index_size.pop_back(); // remove new-line at the end
 
         std::ofstream file;
         file.open(full_name + ".txt");
 
-        file << "Run name: " << full_name << std::endl
-             << "Geometry file: " << geom_file << std::endl
-             << "N geometries: " << geometry.size() << std::endl
-             << "Distance query file: " << dquery_file << std::endl
-             << "N dqueries: " << dqueries.size() << std::endl
-             << "Range query file: " << rquery_file << std::endl
-             << "N rqueries: " << rqueries.size() << std::endl
-             << "Index size: " << index_size << std::endl
-             << "Index build time: " << pt_build_index.get_time() << std::endl
-             << "Distance query throughput: " << pt_execute_distance_queries.get_throughput() << std::endl
-             << "Range query throughput: " << pt_execute_range_queries.get_throughput() << std::endl;
+        file << "run_name          | " << full_name << std::endl
+             << "geometry_file     | " << geom_file << std::endl
+             << "n_geometries      | " << geometry.size() << std::endl
+             << "dquery_file       | " << dquery_file << std::endl
+             << "n_dqueries        | " << dqueries.size() << std::endl
+             << "rquery_file       | " << rquery_file << std::endl
+             << "n_rqueries        | " << rqueries.size() << std::endl
+             << "index_size        | " << index_size << " MB" << std::endl
+             << "build_time        | " << pt_build_index.get_time() << " hh:mm:ss" << std::endl
+             << "dquery_throughput | " << pt_execute_distance_queries.get_throughput() << " queries/s" << std::endl
+             << "rquery_throughput | " << pt_execute_range_queries.get_throughput() << " queries/s" << std::endl;
 
         file.close();
 
-        std::cout << "Report written to " << report_file << "." << std::endl;
+        std::cout << "Report written to " << full_name << ".txt." << std::endl;
     }
 };
