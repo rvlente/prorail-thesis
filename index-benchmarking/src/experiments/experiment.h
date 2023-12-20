@@ -36,9 +36,9 @@ public:
     virtual std::vector<TDQuery> load_distance_queries(const char *file_path, std::function<void(size_t, size_t)> progress) = 0;
     virtual std::vector<TRQuery> load_range_queries(const char *file_path, std::function<void(size_t, size_t)> progress) = 0;
 
-    virtual std::unique_ptr<TIndex> build_index(const std::vector<TGeom> &geometry, std::function<void(size_t, size_t)> progress) = 0;
-    virtual void execute_distance_queries(TIndex *index, const std::vector<TDQuery> &queries, std::function<void(size_t, size_t)> progress) = 0;
-    virtual void execute_range_queries(TIndex *index, const std::vector<TRQuery> &queries, std::function<void(size_t, size_t)> progress) = 0;
+    virtual std::unique_ptr<TIndex> build_index(std::vector<TGeom> &geometry, std::function<void(size_t, size_t)> progress) = 0;
+    virtual void execute_distance_queries(TIndex *index, std::vector<TDQuery> &queries, std::function<void(size_t, size_t)> progress) = 0;
+    virtual void execute_range_queries(TIndex *index, std::vector<TRQuery> &queries, std::function<void(size_t, size_t)> progress) = 0;
 
     void run(const char *run_name, const char *geom_file, const char *dquery_file, const char *rquery_file, const char *argv0)
     {

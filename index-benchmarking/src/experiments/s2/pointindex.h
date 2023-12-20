@@ -7,7 +7,7 @@
 #include "common.h"
 #include "../experiment.h"
 
-class S2PointIndexExperimentRunner : public BaseExperimentRunner<S2PointIndex<int>, S2Point, S2DistanceQuery, S2RangeQuery>
+class S2PointIndexExperimentRunner : public BaseExperimentRunner<S2PointIndex<int>, S2Point, DistanceQuery<S2Point>, S2RangeQuery>
 {
 public:
     S2PointIndexExperimentRunner(const char *name) : BaseExperimentRunner(name){};
@@ -60,7 +60,7 @@ private:
         return queries;
     }
 
-    std::unique_ptr<S2PointIndex<int>> build_index(const std::vector<S2Point> &geometry, std::function<void(size_t, size_t)> progress)
+    std::unique_ptr<S2PointIndex<int>> build_index(std::vector<S2Point> &geometry, std::function<void(size_t, size_t)> progress)
     {
         auto index = std::make_unique<S2PointIndex<int>>();
 
@@ -73,7 +73,7 @@ private:
         return index;
     }
 
-    void execute_distance_queries(S2PointIndex<int> *index, const std::vector<S2DistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
+    void execute_distance_queries(S2PointIndex<int> *index, std::vector<S2DistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
         S2ClosestPointQuery<int> query(index);
 
@@ -88,7 +88,7 @@ private:
         }
     }
 
-    void execute_range_queries(S2PointIndex<int> *index, const std::vector<S2RangeQuery> &queries, std::function<void(size_t, size_t)> progress)
+    void execute_range_queries(S2PointIndex<int> *index, std::vector<S2RangeQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
         S2ClosestPointQuery<int> query(index);
 
