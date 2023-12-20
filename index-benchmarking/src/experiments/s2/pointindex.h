@@ -4,15 +4,13 @@
 #include "s2/s2point_index.h"
 #include "s2/s2closest_point_query.h"
 #include "s2/s2earth.h"
-#include "../utils/experiment.h"
+#include "common.h"
+#include "../experiment.h"
 
-typedef DistanceQuery<S2Point> S2DistanceQuery;
-typedef RangeQuery<S2LatLngRect> S2RangeQuery;
-
-class S2PointIndexRunner : public BaseExperimentRunner<S2PointIndex<int>, S2Point, S2DistanceQuery, S2RangeQuery>
+class S2PointIndexExperimentRunner : public BaseExperimentRunner<S2PointIndex<int>, S2Point, DistanceQuery<S2Point>, S2RangeQuery>
 {
 public:
-    S2PointIndexRunner(const char *name) : BaseExperimentRunner(name){};
+    S2PointIndexExperimentRunner(const char *name) : BaseExperimentRunner(name){};
 
 private:
     std::vector<S2Point> load_geometry(const char *file_path, std::function<void(size_t, size_t)> progress)
@@ -20,7 +18,7 @@ private:
         auto coordinates = load_coordinates(file_path);
         std::vector<S2Point> s2_points;
 
-        for (int i = 0; i < coordinates.size(); i++)
+        for (size_t i = 0; i < coordinates.size(); i++)
         {
             auto coordinate = coordinates[i];
             s2_points.push_back(S2LatLng::FromDegrees(coordinate.lat, coordinate.lon).ToPoint());
@@ -62,7 +60,7 @@ private:
         return queries;
     }
 
-    std::unique_ptr<S2PointIndex<int>> build_index(const std::vector<S2Point> &geometry, std::function<void(size_t, size_t)> progress)
+    std::unique_ptr<S2PointIndex<int>> build_index(std::vector<S2Point> &geometry, std::function<void(size_t, size_t)> progress)
     {
         auto index = std::make_unique<S2PointIndex<int>>();
 
@@ -75,7 +73,7 @@ private:
         return index;
     }
 
-    void execute_distance_queries(const S2PointIndex<int> *index, const std::vector<S2DistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
+    void execute_distance_queries(S2PointIndex<int> *index, std::vector<S2DistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
         S2ClosestPointQuery<int> query(index);
 
@@ -90,7 +88,7 @@ private:
         }
     }
 
-    void execute_range_queries(const S2PointIndex<int> *index, const std::vector<S2RangeQuery> &queries, std::function<void(size_t, size_t)> progress)
+    void execute_range_queries(S2PointIndex<int> *index, std::vector<S2RangeQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
         S2ClosestPointQuery<int> query(index);
 
@@ -99,7 +97,7 @@ private:
             S2ClosestPointQueryPointTarget target(queries[i].range.GetCenter().ToPoint());
 
             query.mutable_options()->set_region(&queries[i].range);
-            query.FindClosestPoints(&target);
+            auto result = query.FindClosestPoints(&target);
 
             progress(i, queries.size());
         }

@@ -11,7 +11,7 @@
 std::shared_ptr<S2PointIndex<int>> build_s2pointindex(const S2PointVectorShape *points)
 {
     auto index = std::make_shared<S2PointIndex<int>>();
-    ProgressBar progress(points->num_points());
+    ProgressTracker progress(points->num_points());
     progress.start();
 
     for (int i = 0; i < points->num_points(); i++)
@@ -27,7 +27,7 @@ std::shared_ptr<S2PointIndex<int>> build_s2pointindex(const S2PointVectorShape *
 
 void run_distance_queries(std::shared_ptr<S2PointIndex<int>> index, std::vector<DistanceQuery> &dqueries)
 {
-    ProgressBar progress(dqueries.size());
+    ProgressTracker progress(dqueries.size());
     progress.start();
 
     for (size_t i = 0; i < dqueries.size(); i++)
@@ -49,7 +49,7 @@ void run_distance_queries(std::shared_ptr<S2PointIndex<int>> index, std::vector<
 
 void run_range_queries(std::shared_ptr<S2PointIndex<int>> index, std::vector<RangeQuery> &rqueries)
 {
-    ProgressBar progress(rqueries.size());
+    ProgressTracker progress(rqueries.size());
     progress.start();
 
     for (size_t i = 0; i < rqueries.size(); i++)
