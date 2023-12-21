@@ -11,15 +11,13 @@ int main(int argc, char **argv)
     std::string distance_query_file = "../data/nyc-taxi/queries/taxi_distance_0.001.csv";
     std::string range_query_file = "../data/nyc-taxi/queries/taxi_range_0.001.csv";
 
-    std::string crs_nyc = "EPSG:32118";
-
-    auto strtree_runner = STRtreeExperimentRunner("geos_strtree", crs_nyc);
+    auto strtree_runner = STRtreeExperimentRunner("geos_strtree", "EPSG:32118");
     strtree_runner.run("nyc-taxi-30m", data_file_30m, distance_query_file, range_query_file, argv[0]);
     strtree_runner.run("nyc-taxi-100m", data_file_100m, distance_query_file, range_query_file, argv[0]);
     strtree_runner.run("nyc-taxi-180m", data_file_180m, distance_query_file, range_query_file, argv[0]);
     strtree_runner.run("nyc-taxi-full", data_file_full, distance_query_file, range_query_file, argv[0]);
 
-    auto quadtree_runner = QuadtreeExperimentRunner("geos_quadtree", crs_nyc);
+    auto quadtree_runner = QuadtreeExperimentRunner("geos_quadtree", "EPSG:32118");
     quadtree_runner.run("nyc-taxi-30m", data_file_30m, distance_query_file, range_query_file, argv[0]);
     quadtree_runner.run("nyc-taxi-100m", data_file_100m, distance_query_file, range_query_file, argv[0]);
     quadtree_runner.run("nyc-taxi-180m", data_file_180m, distance_query_file, range_query_file, argv[0]);

@@ -28,14 +28,13 @@ class BaseExperimentRunner
 {
 private:
     const std::string _name;
-    const Coord _translation;
 
 public:
-    BaseExperimentRunner(std::string name, Coord translation = {0, 0}) : _name(name), _translation(translation){};
+    BaseExperimentRunner(std::string name) : _name(name){};
 
-    virtual std::vector<TGeom> load_geometry(std::string file_path, const Coord &translation, std::function<void(size_t, size_t)> progress) = 0;
-    virtual std::vector<TDQuery> load_distance_queries(std::string file_path, const Coord &translation, std::function<void(size_t, size_t)> progress) = 0;
-    virtual std::vector<TRQuery> load_range_queries(std::string file_path, const Coord &translation, std::function<void(size_t, size_t)> progress) = 0;
+    virtual std::vector<TGeom> load_geometry(std::string file_path, std::function<void(size_t, size_t)> progress) = 0;
+    virtual std::vector<TDQuery> load_distance_queries(std::string file_path, std::function<void(size_t, size_t)> progress) = 0;
+    virtual std::vector<TRQuery> load_range_queries(std::string file_path, std::function<void(size_t, size_t)> progress) = 0;
 
     virtual std::unique_ptr<TIndex> build_index(std::vector<TGeom> &geometry, std::function<void(size_t, size_t)> progress) = 0;
     virtual void execute_distance_queries(TIndex *index, std::vector<TDQuery> &queries, std::function<void(size_t, size_t)> progress) = 0;
@@ -53,7 +52,7 @@ public:
         std::cout << "Loading geometry..." << std::endl;
 
         ProgressTracker pt_load_geometry;
-        auto geometry = load_geometry(geom_file, _translation, pt_load_geometry.bind());
+        auto geometry = load_geometry(geom_file, pt_load_geometry.bind());
         pt_load_geometry.stop();
 
         std::cout << "Done. Loaded " << geometry.size() << " objects." << std::endl;
@@ -61,13 +60,13 @@ public:
         std::cout << "Loading distance queries... " << std::endl;
 
         ProgressTracker pt_load_distance_queries;
-        auto dqueries = load_distance_queries(dquery_file, _translation, pt_load_distance_queries.bind());
+        auto dqueries = load_distance_queries(dquery_file, pt_load_distance_queries.bind());
         pt_load_distance_queries.stop();
 
         std::cout << "Loading range queries... " << std::endl;
 
         ProgressTracker pt_load_range_queries;
-        auto rqueries = load_range_queries(rquery_file, _translation, pt_load_range_queries.bind());
+        auto rqueries = load_range_queries(rquery_file, pt_load_range_queries.bind());
         pt_load_range_queries.stop();
 
         std::cout << "Done. Loaded " << dqueries.size() << "/" << rqueries.size() << " distance/range queries." << std::endl;

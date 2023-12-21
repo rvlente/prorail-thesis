@@ -4,12 +4,11 @@ generate-nyctaxi.py
 This script provides functions to download the 2009-2010 NYC TLC Taxi dataset and write 
 it to either GeoPackage or binary format.
 
-Usage:
+Example usage:
 
     python -i generate-nyctaxi.py
     >>> DATA_FOLDER = Path('data/nyc-taxi')
     >>> download_files(DATA_FOLDER / 'raw')
-    >>> create_gpkg(DATA_FOLDER / 'raw', DATA_FOLDER / 'nyc-taxi-30m.gpkg', 30_000_000)
     >>> create_binary(DATA_FOLDER / 'raw', DATA_FOLDER / 'nyc-taxi-30m.bin', 30_000_000)
 """
 
@@ -65,27 +64,28 @@ def _setup_duckdb(input_folder):
     return conn
 
 
-def create_binary(raw_folder, target_file, limit=None):
+# def create_gpkg(raw_folder, target_file, limit=None):
+#     write_data_query = f"""
+#     COPY (SELECT ST_Point(lon, lat) FROM nyctaxi{'' if limit is None else f' USING SAMPLE {limit}'}) 
+#     TO '{target_file}' WITH (
+#         FORMAT GDAL,
+#         DRIVER 'GPKG',
+#         LAYER_CREATION_OPTIONS 'SPATIAL_INDEX=NO'
+#     );
+#     """
+
+#     conn = _setup_duckdb(raw_folder)
+#     conn.execute("INSTALL spatial; LOAD spatial;")
+#     conn.execute(write_data_query)
+#     conn.close()
+
+
+def create_binary(raw_folder, target_file, limit=None, translate=None):
     conn = _setup_duckdb(raw_folder)
-    df = conn.sql(f"SELECT * FROM nyctaxi{'' if limit is None else f' USING SAMPLE {limit}'};").pl()
+    query = f"SELECT lat{'' if translate is None else f' + {translate[0]}'}, lon{'' if translate is None else f' + {translate[0]}'} FROM nyctaxi{'' if limit is None else f' USING SAMPLE {limit}'};"
+    df = conn.sql(query).pl()
 
     with open(target_file, "wb") as f:
-        for i, (lat, lon) in enumerate(df.iter_rows()):
+        for lat, lon in df.iter_rows():
             f.write(struct.pack("d", lat))
             f.write(struct.pack("d", lon))
-
-
-def create_gpkg(raw_folder, target_file, limit=None):
-    write_data_query = f"""
-    COPY (SELECT ST_Point(lon, lat) FROM nyctaxi{'' if limit is None else f' USING SAMPLE {limit}'}) 
-    TO '{target_file}' WITH (
-        FORMAT GDAL,
-        DRIVER 'GPKG',
-        LAYER_CREATION_OPTIONS 'SPATIAL_INDEX=NO'
-    );
-    """
-
-    conn = _setup_duckdb(raw_folder)
-    conn.execute("INSTALL spatial; LOAD spatial;")
-    conn.execute(write_data_query)
-    conn.close()
