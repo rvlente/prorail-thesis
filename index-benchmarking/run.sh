@@ -9,6 +9,8 @@ export PERFTOOLS_VERBOSE=-1000 # disable gperftools dump logs
 export HEAP_PROFILE_INUSE_INTERVAL=0 # disable dump intervals
 export HEAP_PROFILE_ALLOCATION_INTERVAL=0
 
+mkdir -p results
+
 rm -rf tmp
 mkdir -p tmp
 mkdir -p build

@@ -8,9 +8,9 @@ private:
     PJ *P;
 
 public:
-    ProjWrapper(const char *crsFrom, const char *crsTo)
+    ProjWrapper(std::string crsFrom, std::string crsTo)
     {
-        this->P = proj_create_crs_to_crs(NULL, crsFrom, crsTo, NULL);
+        this->P = proj_create_crs_to_crs(NULL, crsFrom.c_str(), crsTo.c_str(), NULL);
     }
 
     ~ProjWrapper()

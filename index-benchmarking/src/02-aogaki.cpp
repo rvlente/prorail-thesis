@@ -1,50 +1,36 @@
-// #include <chrono>
-// #include <memory>
-// #include <tuple>
-// #include <iostream>
-// #include "geos/quadtree.h"
-// #include "geos/strtree.h"
-// #include "s2/pointindex.h"
-// #include "s2/shapeindex.h"
-// #include "utils/data.h"
+#include "experiments/geos/strtree.h"
+#include "experiments/geos/quadtree.h"
+#include "experiments/s2/pointindex.h"
 
-// int main(int argc, char **argv)
-// {
-//     if (argc != 4)
-//     {
-//         std::cout << "Usage: " << argv[0] << " <data_file> <dq_file> <rq_file>" << std::endl;
-//         return 1;
-//     }
+int main(int argc, char **argv)
+{
+    std::string data_file_30m = "../data/nyc-taxi/nyc-taxi-30m.bin";
+    std::string data_file_100m = "../data/nyc-taxi/nyc-taxi-100m.bin";
+    std::string data_file_180m = "../data/nyc-taxi/nyc-taxi-180m.bin";
+    std::string data_file_full = "../data/nyc-taxi/nyc-taxi-full.bin";
+    std::string distance_query_file = "../data/nyc-taxi/queries/taxi_distance_0.001.csv";
+    std::string range_query_file = "../data/nyc-taxi/queries/taxi_range_0.001.csv";
 
-//     const char *data_file = argv[1];
-//     const char *distance_query_file = argv[2];
-//     const char *range_query_file = argv[3];
+    std::string crs_aogaki = "EPSG:6684";
+    const Coord tr_aogaki = {0, 0};
 
-//     // Load nyc-taxi points from file.
-//     std::cout << "Loading aogaki-taxi dataset... " << std::flush;
-//     auto points = load_coordinates(data_file);
-//     std::cout << "Done." << std::endl;
+    auto strtree_runner = STRtreeExperimentRunner("geos_strtree", crs_aogaki, tr_aogaki);
+    strtree_runner.run("nyc-taxi-30m", data_file_30m, distance_query_file, range_query_file, argv[0]);
+    strtree_runner.run("nyc-taxi-100m", data_file_100m, distance_query_file, range_query_file, argv[0]);
+    strtree_runner.run("nyc-taxi-180m", data_file_180m, distance_query_file, range_query_file, argv[0]);
+    strtree_runner.run("nyc-taxi-full", data_file_full, distance_query_file, range_query_file, argv[0]);
 
-//     // Load queries.
-//     std::cout << "Loading queries... " << std::flush;
-//     auto distance_queries = load_distance_queries(distance_query_file);
-//     auto range_queries = load_range_queries(range_query_file);
-//     std::cout << "Done." << std::endl
-//               << std::endl
-//               << "Running benchmarks..." << std::endl
-//               << std::endl;
+    auto quadtree_runner = QuadtreeExperimentRunner("geos_quadtree", crs_aogaki, tr_aogaki);
+    quadtree_runner.run("nyc-taxi-30m", data_file_30m, distance_query_file, range_query_file, argv[0]);
+    quadtree_runner.run("nyc-taxi-100m", data_file_100m, distance_query_file, range_query_file, argv[0]);
+    quadtree_runner.run("nyc-taxi-180m", data_file_180m, distance_query_file, range_query_file, argv[0]);
+    quadtree_runner.run("nyc-taxi-full", data_file_full, distance_query_file, range_query_file, argv[0]);
 
-//     // Run benchmarks.
-//     auto s2_points = create_s2_points(points);
-//     benchmark_s2pointindex(s2_points, distance_queries, range_queries);
-//     benchmark_s2shapeindex(s2_points, distance_queries, range_queries);
+    auto s2pointindex_runner = S2PointIndexExperimentRunner("s2_pointindex", tr_aogaki);
+    s2pointindex_runner.run("nyc-taxi-30m", data_file_30m, distance_query_file, range_query_file, argv[0]);
+    s2pointindex_runner.run("nyc-taxi-100m", data_file_100m, distance_query_file, range_query_file, argv[0]);
+    s2pointindex_runner.run("nyc-taxi-180m", data_file_180m, distance_query_file, range_query_file, argv[0]);
+    s2pointindex_runner.run("nyc-taxi-full", data_file_full, distance_query_file, range_query_file, argv[0]);
 
-//     auto geos_points = create_geos_points(points, "EPSG:6684"); // Japan projection
-
-//     benchmark_strtree(geos_points);
-//     benchmark_quadtree(geos_points);
-
-//     geos_points.clear();
-
-//     return 0;
-// }
+    return 0;
+}

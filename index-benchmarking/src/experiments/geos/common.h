@@ -21,13 +21,13 @@ private:
     geos::geom::GeometryFactory::Ptr _factory;
 
 public:
-    GeosIndexExperimentRunner(const char *name, const char *crs) : BaseExperimentRunner<TIndex, std::unique_ptr<geos::geom::Point>, GeosDistanceQuery, GeosRangeQuery>(name), _transformer("EPSG:4326", crs)
+    GeosIndexExperimentRunner(std::string name, std::string crs, const Coord translation = {0, 0}) : BaseExperimentRunner<TIndex, std::unique_ptr<geos::geom::Point>, GeosDistanceQuery, GeosRangeQuery>(name, translation), _transformer("EPSG:4326", crs)
     {
         _factory = geos::geom::GeometryFactory::create();
     };
 
 private:
-    std::vector<std::unique_ptr<geos::geom::Point>> load_geometry(const char *file_path, std::function<void(size_t, size_t)> progress)
+    std::vector<std::unique_ptr<geos::geom::Point>> load_geometry(std::string file_path, const Coord &translation, std::function<void(size_t, size_t)> progress)
     {
         auto coordinates = load_coordinates(file_path);
         std::vector<std::unique_ptr<geos::geom::Point>> geos_points;
@@ -35,7 +35,7 @@ private:
         for (size_t i = 0; i < coordinates.size(); i++)
         {
             auto latlon = coordinates[i];
-            auto xy = _transformer.transform(latlon.lat, latlon.lon);
+            auto xy = _transformer.transform(latlon.lat + translation.lat, latlon.lon + translation.lon);
             geos_points.push_back(_factory->createPoint(geos::geom::Coordinate(std::get<0>(xy), std::get<1>(xy))));
             progress(i, coordinates.size());
         }
@@ -43,7 +43,7 @@ private:
         return geos_points;
     }
 
-    std::vector<GeosDistanceQuery> load_distance_queries(const char *file_path, std::function<void(size_t, size_t)> progress)
+    std::vector<GeosDistanceQuery> load_distance_queries(std::string file_path, const Coord &translation, std::function<void(size_t, size_t)> progress)
     {
         auto raw_queries = _load_distance_queries(file_path);
 
@@ -52,7 +52,7 @@ private:
         for (size_t i = 0; i < raw_queries.size(); i++)
         {
             auto q = raw_queries[i];
-            auto xy = _transformer.transform(q.coord.lat, q.coord.lon);
+            auto xy = _transformer.transform(q.coord.lat + translation.lat, q.coord.lon + translation.lon);
 
             queries.push_back({_factory->createPoint(geos::geom::Coordinate(std::get<0>(xy), std::get<1>(xy))), q.distance});
 
@@ -62,7 +62,7 @@ private:
         return queries;
     }
 
-    std::vector<GeosRangeQuery> load_range_queries(const char *file_path, std::function<void(size_t, size_t)> progress)
+    std::vector<GeosRangeQuery> load_range_queries(std::string file_path, const Coord &translation, std::function<void(size_t, size_t)> progress)
     {
         auto raw_queries = _load_range_queries(file_path);
 
@@ -72,11 +72,11 @@ private:
         {
             auto q = raw_queries[i];
 
-            auto xya = _transformer.transform(q.a.lat, q.a.lon);
+            auto xya = _transformer.transform(q.a.lat + translation.lat, q.a.lon + translation.lon);
             auto xa = std::get<0>(xya);
             auto ya = std::get<1>(xya);
 
-            auto xyb = _transformer.transform(q.b.lat, q.b.lon);
+            auto xyb = _transformer.transform(q.b.lat + translation.lat, q.b.lon + translation.lon);
             auto xb = std::get<0>(xyb);
             auto yb = std::get<1>(xyb);
 
@@ -90,8 +90,6 @@ private:
 
     void execute_distance_queries(TIndex *index, std::vector<GeosDistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
-        std::vector<geos::geom::Point *> result;
-
         for (size_t i = 0; i < queries.size(); i++)
         {
             auto target_point = queries[i].point.get();
@@ -100,6 +98,7 @@ private:
             geos::geom::Envelope rectangle(geos::geom::Coordinate(target_point->getX() - distance, target_point->getY() - distance),
                                            geos::geom::Coordinate(target_point->getX() + distance, target_point->getY() + distance));
 
+            std::vector<geos::geom::Point *> result;
             std::vector<void *> candidates;
 
             index->query(&rectangle, candidates);
@@ -113,7 +112,6 @@ private:
                 }
             }
 
-            result.clear();
             progress(i, queries.size());
         }
     }

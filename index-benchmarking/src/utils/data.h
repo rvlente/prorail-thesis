@@ -22,7 +22,7 @@ struct RQuery
     Coord b;
 };
 
-std::vector<Coord> load_coordinates(const char *binFile, const Coord &translation = {0, 0})
+std::vector<Coord> load_coordinates(std::string binFile, const Coord &translation = {0, 0})
 {
     std::vector<Coord> coordinates;
 
@@ -38,7 +38,7 @@ std::vector<Coord> load_coordinates(const char *binFile, const Coord &translatio
     return coordinates;
 }
 
-std::vector<DQuery> _load_distance_queries(const char *queryFile, const Coord &translation = {0, 0})
+std::vector<DQuery> _load_distance_queries(std::string queryFile, const Coord &translation = {0, 0})
 {
     std::vector<DQuery> queries;
     std::ifstream fin(queryFile);
@@ -63,7 +63,7 @@ std::vector<DQuery> _load_distance_queries(const char *queryFile, const Coord &t
     return queries;
 }
 
-std::vector<RQuery> _load_range_queries(const char *queryFile, const Coord &translation = {0, 0})
+std::vector<RQuery> _load_range_queries(std::string queryFile, const Coord &translation = {0, 0})
 {
     std::vector<RQuery> queries;
     std::ifstream fin(queryFile);

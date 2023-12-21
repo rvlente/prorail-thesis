@@ -10,10 +10,10 @@
 class S2PointIndexExperimentRunner : public BaseExperimentRunner<S2PointIndex<int>, S2Point, DistanceQuery<S2Point>, S2RangeQuery>
 {
 public:
-    S2PointIndexExperimentRunner(const char *name) : BaseExperimentRunner(name){};
+    S2PointIndexExperimentRunner(std::string name, const Coord translation = {0, 0}) : BaseExperimentRunner(name, translation){};
 
 private:
-    std::vector<S2Point> load_geometry(const char *file_path, std::function<void(size_t, size_t)> progress)
+    std::vector<S2Point> load_geometry(std::string file_path, const Coord &translation, std::function<void(size_t, size_t)> progress)
     {
         auto coordinates = load_coordinates(file_path);
         std::vector<S2Point> s2_points;
@@ -21,14 +21,14 @@ private:
         for (size_t i = 0; i < coordinates.size(); i++)
         {
             auto coordinate = coordinates[i];
-            s2_points.push_back(S2LatLng::FromDegrees(coordinate.lat, coordinate.lon).ToPoint());
+            s2_points.push_back(S2LatLng::FromDegrees(coordinate.lat + translation.lat, coordinate.lon + translation.lon).ToPoint());
             progress(i, coordinates.size());
         }
 
         return s2_points;
     }
 
-    std::vector<S2DistanceQuery> load_distance_queries(const char *file_path, std::function<void(size_t, size_t)> progress)
+    std::vector<S2DistanceQuery> load_distance_queries(std::string file_path, const Coord &translation, std::function<void(size_t, size_t)> progress)
     {
         auto raw_queries = _load_distance_queries(file_path);
 
@@ -37,14 +37,14 @@ private:
         for (size_t i = 0; i < raw_queries.size(); i++)
         {
             auto q = raw_queries[i];
-            queries.push_back({S2LatLng::FromDegrees(q.coord.lat, q.coord.lon).ToPoint(), q.distance});
+            queries.push_back({S2LatLng::FromDegrees(q.coord.lat + translation.lat, q.coord.lon + translation.lon).ToPoint(), q.distance});
             progress(i, raw_queries.size());
         }
 
         return queries;
     }
 
-    std::vector<S2RangeQuery> load_range_queries(const char *file_path, std::function<void(size_t, size_t)> progress)
+    std::vector<S2RangeQuery> load_range_queries(std::string file_path, const Coord &translation, std::function<void(size_t, size_t)> progress)
     {
         auto raw_queries = _load_range_queries(file_path);
 
@@ -53,7 +53,9 @@ private:
         for (size_t i = 0; i < raw_queries.size(); i++)
         {
             auto q = raw_queries[i];
-            queries.push_back({S2LatLngRect(S2LatLng::FromDegrees(q.a.lat, q.a.lon), S2LatLng::FromDegrees(q.b.lat, q.b.lon))});
+            queries.push_back({S2LatLngRect(
+                S2LatLng::FromDegrees(q.a.lat + translation.lat, q.a.lon + translation.lon),
+                S2LatLng::FromDegrees(q.b.lat + translation.lat, q.b.lon + translation.lon))});
             progress(i, raw_queries.size());
         }
 

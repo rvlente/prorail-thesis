@@ -54,7 +54,7 @@ private:
 class GDALGeometryIterator
 {
 public:
-    static std::unique_ptr<GDALGeometryIterator> fromGPKG(const char *gpkgFile, const char *layerName)
+    static std::unique_ptr<GDALGeometryIterator> fromGPKG(std::string gpkgFile, std::string layerName)
     {
         GDALAllRegister();
         auto dataset = GDALDataset::Open(gpkgFile, GA_ReadOnly);
@@ -89,7 +89,7 @@ private:
     OGRFeature *currentFeature;
 
 public:
-    GDALGeometryIterator(GDALDataset *dataset, const char *layerName) : dataset(dataset)
+    GDALGeometryIterator(GDALDataset *dataset, std::string layerName) : dataset(dataset)
     {
         this->layer = dataset->GetLayerByName(layerName);
     }
