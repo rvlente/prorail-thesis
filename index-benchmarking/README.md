@@ -10,7 +10,7 @@ First, install these prerequisites.
 
 ```bash
 apt-get update && apt-get upgrade
-apt-get install libsqlite3 libssl-dev libtiff-dev
+apt-get install libsqlite3-dev libssl-dev libtiff-dev libgtest-dev
 ```
 
 ### PROJ

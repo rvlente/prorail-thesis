@@ -18,7 +18,7 @@ import struct
 from pathlib import Path # imported for convenience
 
 
-def download_files():
+def download_files(target_folder):
     for color in ["yellow"]:
         for yyyy in [2009, 2010]:
             for mm in range(1, 13):
@@ -31,7 +31,7 @@ def download_files():
                 result = requests.get(url)
 
                 with open(
-                    f"data/nyc-taxi/{color}_tripdata_{yyyy}-{mm:02d}.parquet", "wb"
+                    target_folder / f"{color}_tripdata_{yyyy}-{mm:02d}.parquet", "wb"
                 ) as f:
                     f.write(result.content)
 
@@ -80,9 +80,9 @@ def _setup_duckdb(input_folder):
 #     conn.close()
 
 
-def create_binary(raw_folder, target_file, limit=None, translate=None):
+def create_binary(raw_folder, target_file, limit=None):
     conn = _setup_duckdb(raw_folder)
-    query = f"SELECT lat{'' if translate is None else f' + {translate[0]}'}, lon{'' if translate is None else f' + {translate[0]}'} FROM nyctaxi{'' if limit is None else f' USING SAMPLE {limit}'};"
+    query = f"SELECT lat, lon FROM nyctaxi{'' if limit is None else f' USING SAMPLE {limit}'};"
     df = conn.sql(query).pl()
 
     with open(target_file, "wb") as f:
