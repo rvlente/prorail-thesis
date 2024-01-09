@@ -79,6 +79,10 @@ private:
     {
         S2ClosestPointQuery<int> query(index);
 
+        // Run for at most 5 minutes. This should be enough to get an approximate throughput.
+        int max_seconds = 5 * 60;
+        auto start_time = std::chrono::high_resolution_clock::now();
+
         for (size_t i = 0; i < queries.size(); i++)
         {
             S2ClosestPointQueryPointTarget target(queries[i].point);
@@ -86,13 +90,25 @@ private:
             query.mutable_options()->set_max_distance(S2Earth::ToAngle(util::units::Meters(queries[i].distance)));
             query.FindClosestPoints(&target);
 
-            progress(i, queries.size());
+            auto current_time = std::chrono::high_resolution_clock::now();
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+
+            progress(seconds, max_seconds);
+
+            if (seconds >= max_seconds)
+            {
+                break;
+            }
         }
     }
 
     void execute_range_queries(S2PointIndex<int> *index, std::vector<S2RangeQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
         S2ClosestPointQuery<int> query(index);
+
+        // Run for at most 2 minutes to prevent excessive compute usage. This should be enough to get an approximate throughput.
+        int max_seconds = 2 * 60;
+        auto start_time = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < queries.size(); i++)
         {
@@ -101,7 +117,15 @@ private:
             query.mutable_options()->set_region(&queries[i].range);
             auto result = query.FindClosestPoints(&target);
 
-            progress(i, queries.size());
+            auto current_time = std::chrono::high_resolution_clock::now();
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+
+            progress(seconds, max_seconds);
+
+            if (seconds >= max_seconds)
+            {
+                break;
+            }
         }
     }
 };

@@ -112,6 +112,6 @@ public:
     inline float get_throughput()
     {
         auto seconds_passed = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
-        return (float)total.load() / (float)seconds_passed;
+        return (float)progress.load() / (float)seconds_passed;
     }
 };

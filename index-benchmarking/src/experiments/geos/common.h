@@ -90,6 +90,10 @@ private:
 
     void execute_distance_queries(TIndex *index, std::vector<GeosDistanceQuery> &queries, std::function<void(size_t, size_t)> progress)
     {
+        // Run for at most 2 minutes to prevent excessive compute usage. This should be enough to get an approximate throughput.
+        int max_seconds = 2 * 60;
+        auto start_time = std::chrono::high_resolution_clock::now();
+
         for (size_t i = 0; i < queries.size(); i++)
         {
             auto target_point = queries[i].point.get();
@@ -112,7 +116,15 @@ private:
                 }
             }
 
-            progress(i, queries.size());
+            auto current_time = std::chrono::high_resolution_clock::now();
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+
+            progress(seconds, max_seconds);
+
+            if (seconds >= max_seconds)
+            {
+                break;
+            }
         }
     }
 
@@ -120,6 +132,10 @@ private:
     {
         std::vector<geos::geom::Geometry *> result;
         result.reserve(1e8);
+
+        // Run for at most 2 minutes to prevent excessive compute usage. This should be enough to get an approximate throughput.
+        int max_seconds = 2 * 60;
+        auto start_time = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < queries.size(); i++)
         {
@@ -129,7 +145,15 @@ private:
             uint64_t res_size = result.size();
             result.clear();
 
-            progress(i, queries.size());
+            auto current_time = std::chrono::high_resolution_clock::now();
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+
+            progress(seconds, max_seconds);
+
+            if (seconds >= max_seconds)
+            {
+                break;
+            }
         }
     }
 };
