@@ -10,7 +10,7 @@
 class S2PointIndexExperimentRunner : public BaseExperimentRunner<S2PointIndex<int>, S2Point, DistanceQuery<S2Point>, S2RangeQuery>
 {
 public:
-    S2PointIndexExperimentRunner(std::string name) : BaseExperimentRunner(name){};
+    S2PointIndexExperimentRunner(std::string name, std::string executable_name) : BaseExperimentRunner(name, executable_name){};
 
 private:
     std::vector<S2Point> load_geometry(std::string file_path, std::function<void(size_t, size_t)> progress)
@@ -79,8 +79,8 @@ private:
     {
         S2ClosestPointQuery<int> query(index);
 
-        // Run for at most 5 minutes. This should be enough to get an approximate throughput.
-        int max_seconds = 5 * 60;
+        // Run for at most 2 minutes to prevent excessive compute usage. This should be enough to get an approximate throughput.
+        int max_seconds = 2 * 60;
         auto start_time = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < queries.size(); i++)
@@ -93,7 +93,7 @@ private:
             auto current_time = std::chrono::high_resolution_clock::now();
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
 
-            progress(seconds, max_seconds);
+            progress(i, queries.size());
 
             if (seconds >= max_seconds)
             {
@@ -120,7 +120,7 @@ private:
             auto current_time = std::chrono::high_resolution_clock::now();
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
 
-            progress(seconds, max_seconds);
+            progress(i, queries.size());
 
             if (seconds >= max_seconds)
             {

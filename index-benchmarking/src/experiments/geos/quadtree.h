@@ -5,7 +5,7 @@
 class QuadtreeExperimentRunner : public GeosIndexExperimentRunner<geos::index::quadtree::Quadtree>
 {
 public:
-    QuadtreeExperimentRunner(std::string name, std::string crs) : GeosIndexExperimentRunner<geos::index::quadtree::Quadtree>(name, crs) {}
+    QuadtreeExperimentRunner(std::string name, std::string crs, std::string executable_name) : GeosIndexExperimentRunner<geos::index::quadtree::Quadtree>(name, crs, executable_name) {}
 
 private:
     std::unique_ptr<geos::index::quadtree::Quadtree> build_index(std::vector<std::unique_ptr<geos::geom::Point>> &geometry, std::function<void(size_t, size_t)> progress)

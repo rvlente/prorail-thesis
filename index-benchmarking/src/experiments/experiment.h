@@ -28,9 +28,10 @@ class BaseExperimentRunner
 {
 private:
     const std::string _name;
+    const std::string _executable_name;
 
 public:
-    BaseExperimentRunner(std::string name) : _name(name){};
+    BaseExperimentRunner(std::string name, std::string executable_name) : _name(name){};
 
     virtual std::vector<TGeom> load_geometry(std::string file_path, std::function<void(size_t, size_t)> progress) = 0;
     virtual std::vector<TDQuery> load_distance_queries(std::string file_path, std::function<void(size_t, size_t)> progress) = 0;
@@ -40,7 +41,7 @@ public:
     virtual void execute_distance_queries(TIndex *index, std::vector<TDQuery> &queries, std::function<void(size_t, size_t)> progress) = 0;
     virtual void execute_range_queries(TIndex *index, std::vector<TRQuery> &queries, std::function<void(size_t, size_t)> progress) = 0;
 
-    void run(std::string run_name, std::string geom_file, std::vector<std::string> dquery_files, std::vector<std::string> rquery_files, std::string argv0)
+    void run(std::string run_name, std::string geom_file, std::vector<std::string> dquery_files, std::vector<std::string> rquery_files)
     {
         std::string full_name = _name + '_' + run_name;
 
@@ -76,7 +77,7 @@ public:
         pprof_command << "pprof "
                       << "--text "
                       << "--inuse_space "
-                      << argv0 << " "
+                      << _executable_name << " "
                       << "tmp/$(ls tmp | grep " << full_name << " | tail -1)" // last dump in folder
                       << " | grep ::build_index"                              // extract relevant function
                       << " | awk -F ' +' '{ print $5 }'";                     // extract memory allocation field
@@ -92,11 +93,7 @@ public:
         for (const auto &dquery_file : dquery_files)
         {
             std::cout << "Executing distance queries from <" << dquery_file << ">... " << std::endl;
-            ProgressTracker pt_load_distance_queries;
-            auto queries = load_distance_queries(dquery_file, pt_load_distance_queries.bind());
-            pt_load_distance_queries.stop();
-
-            std::cout << "Done. Loaded " << queries.size() << " distance queries. Executing queries..." << std::endl;
+            auto queries = load_distance_queries(dquery_file, [](auto i, auto n) {});
 
             ProgressTracker pt_execute_distance_queries;
             execute_distance_queries(index.get(), queries, pt_execute_distance_queries.bind());
@@ -108,11 +105,7 @@ public:
         for (const auto &rquery_file : rquery_files)
         {
             std::cout << "Executing range queries from <" << rquery_file << ">... " << std::endl;
-            ProgressTracker pt_load_range_queries;
-            auto queries = load_range_queries(rquery_file, pt_load_range_queries.bind());
-            pt_load_range_queries.stop();
-
-            std::cout << "Done. Loaded " << queries.size() << " range queries. Executing queries..." << std::endl;
+            auto queries = load_range_queries(rquery_file, [](auto i, auto n) {});
 
             ProgressTracker pt_execute_range_queries;
             execute_range_queries(index.get(), queries, pt_execute_range_queries.bind());

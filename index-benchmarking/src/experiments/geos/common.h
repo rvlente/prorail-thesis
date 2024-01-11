@@ -21,7 +21,7 @@ private:
     geos::geom::GeometryFactory::Ptr _factory;
 
 public:
-    GeosIndexExperimentRunner(std::string name, std::string crs) : BaseExperimentRunner<TIndex, std::unique_ptr<geos::geom::Point>, GeosDistanceQuery, GeosRangeQuery>(name), _transformer("EPSG:4326", crs)
+    GeosIndexExperimentRunner(std::string name, std::string crs, std::string executable_name) : BaseExperimentRunner<TIndex, std::unique_ptr<geos::geom::Point>, GeosDistanceQuery, GeosRangeQuery>(name, executable_name), _transformer("EPSG:4326", crs)
     {
         _factory = geos::geom::GeometryFactory::create();
     };
@@ -119,7 +119,7 @@ private:
             auto current_time = std::chrono::high_resolution_clock::now();
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
 
-            progress(seconds, max_seconds);
+            progress(i, queries.size());
 
             if (seconds >= max_seconds)
             {
@@ -148,7 +148,7 @@ private:
             auto current_time = std::chrono::high_resolution_clock::now();
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
 
-            progress(seconds, max_seconds);
+            progress(i, queries.size());
 
             if (seconds >= max_seconds)
             {

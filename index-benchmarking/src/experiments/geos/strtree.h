@@ -5,7 +5,7 @@
 class STRtreeExperimentRunner : public GeosIndexExperimentRunner<geos::index::strtree::STRtree>
 {
 public:
-    STRtreeExperimentRunner(std::string name, std::string crs) : GeosIndexExperimentRunner<geos::index::strtree::STRtree>(name, crs) {}
+    STRtreeExperimentRunner(std::string name, std::string crs, std::string executable_name) : GeosIndexExperimentRunner<geos::index::strtree::STRtree>(name, crs, executable_name) {}
 
 private:
     std::unique_ptr<geos::index::strtree::STRtree> build_index(std::vector<std::unique_ptr<geos::geom::Point>> &geometry, std::function<void(size_t, size_t)> progress)
