@@ -15,8 +15,6 @@ int main(int argc, char **argv)
         "../data/nyc-taxi/queries/taxi_distance_0.01.csv",
         "../data/nyc-taxi/queries/taxi_distance_0.1.csv",
         "../data/nyc-taxi/queries/taxi_distance_1.csv",
-        // "../data/nyc-taxi/queries/taxi_distance_10.csv",
-        // "../data/nyc-taxi/queries/taxi_distance_100.csv"
     };
     std::vector<std::string> range_query_files = {
         "../data/nyc-taxi/queries/taxi_range_0.0001.csv",
@@ -24,8 +22,6 @@ int main(int argc, char **argv)
         "../data/nyc-taxi/queries/taxi_range_0.01.csv",
         "../data/nyc-taxi/queries/taxi_range_0.1.csv",
         "../data/nyc-taxi/queries/taxi_range_1.csv",
-        // "../data/nyc-taxi/queries/taxi_range_10.csv",
-        // "../data/nyc-taxi/queries/taxi_range_100.csv"
     };
 
     const std::vector<std::string> fixed_distance_query_file = {distance_query_files[3]};
