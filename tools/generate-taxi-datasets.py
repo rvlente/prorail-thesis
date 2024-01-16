@@ -13,7 +13,6 @@ Example usage:
 """
 
 import duckdb
-import requests
 import struct
 import polars as pl
 from pyproj import Transformer
@@ -157,43 +156,38 @@ def translate_queries(raw_folder, target_folder, translate):
                 out_f.write(out_l)
 
 
+def generate_datasets(conn, data_folder, name, settings={}):
+    create_binary(conn, data_folder / name / f'{name}-0_25m.bin', 250_000, **settings)
+    create_binary(conn, data_folder / name / f'{name}-2_5m.bin', 2_500_000, **settings)
+    create_binary(conn, data_folder / name / f'{name}-25m.bin', 25_000_000, **settings)
+    create_binary(conn, data_folder / name / f'{name}-250m.bin', 250_000_000, **settings)
+
+
 if __name__ == '__main__':
     DATA_FOLDER = Path('data')
-    nyc_taxi_folder = DATA_FOLDER / 'nyc-taxi'
 
-    conn = _setup_duckdb(nyc_taxi_folder / 'raw')
-
-    # create_binary(conn, nyc_taxi_folder / 'nyc-taxi-0_25m.bin', 250_000)
-    # create_binary(conn, nyc_taxi_folder / 'nyc-taxi-2_5m.bin', 2_500_000)
-    # create_binary(conn, nyc_taxi_folder / 'nyc-taxi-25m.bin', 25_000_000)
-    # create_binary(conn, nyc_taxi_folder / 'nyc-taxi-250m.bin', 250_000_000)
-
-    aogaki_folder = DATA_FOLDER / 'aogaki-taxi'
     aogaki_settings = {
         'center': (35.263921, 134.999230),
         'crs': 6684,
         'y_is_easting': True
     }
 
-    create_binary(conn, aogaki_folder / 'aogaki-taxi-0_25m.bin', 250_000, **aogaki_settings)
-    create_binary(conn, aogaki_folder / 'aogaki-taxi-2_5m.bin', 2_500_000, **aogaki_settings)
-    create_binary(conn, aogaki_folder / 'aogaki-taxi-25m.bin', 25_000_000, **aogaki_settings)
-    create_binary(conn, aogaki_folder / 'aogaki-taxi-250m.bin', 250_000_000, **aogaki_settings)
-
-    # translate_queries(nyc_taxi_folder / 'queries', aogaki_settings['folder'] / 'queries', aogaki_settings['center'])
-
-    german_folder = DATA_FOLDER / 'german-taxi'
-    german_settings = {
+    germany_settings = {
         'center': (50.940709, 6.9575126),
         'size': 600_000,
         'crs': 4839,
         'y_is_easting': True 
     }
 
-    create_binary(conn, german_folder / 'german-taxi-0_25m.bin', 250_000, **german_settings)
-    create_binary(conn, german_folder / 'german-taxi-2_5m.bin', 2_500_000, **german_settings)
-    create_binary(conn, german_folder / 'german-taxi-25m.bin', 25_000_000, **german_settings)
-    create_binary(conn, german_folder / 'german-taxi-250m.bin', 250_000_000, **german_settings)
+    japan_settings = {
+        'center': (35.263921, 134.999230),
+        'size': 600_000,
+        'crs': 6684,
+        'y_is_easting': True 
+    }
 
-    # translate_queries(nyc_taxi_folder / 'queries', aogaki_taxi_folder / 'queries', aogaki_translation)
-    # scale_queries(nyc_taxi_folder / 'queries')
+    conn = _setup_duckdb(DATA_FOLDER / 'nyc-taxi' / 'raw')
+    generate_datasets(conn, DATA_FOLDER, 'nyc-taxi')
+    generate_datasets(conn, DATA_FOLDER, 'aogaki-taxi', aogaki_settings)
+    generate_datasets(conn, DATA_FOLDER, 'germany-taxi', germany_settings)
+    generate_datasets(conn, DATA_FOLDER, 'japan-taxi', japan_settings)

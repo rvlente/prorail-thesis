@@ -31,7 +31,7 @@ private:
     const std::string _executable_name;
 
 public:
-    BaseExperimentRunner(std::string name, std::string executable_name) : _name(name){};
+    BaseExperimentRunner(std::string name, std::string executable_name) : _name(name), _executable_name(executable_name){};
 
     virtual std::vector<TGeom> load_geometry(std::string file_path, std::function<void(size_t, size_t)> progress) = 0;
     virtual std::vector<TDQuery> load_distance_queries(std::string file_path, std::function<void(size_t, size_t)> progress) = 0;
