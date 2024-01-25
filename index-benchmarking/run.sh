@@ -23,5 +23,4 @@ cd ..
 
 ./build/$@
 
-cp -r tmp heapprofiles/$1-$(date +%Y%m%dT%H%M%S)
 rm -rf tmp

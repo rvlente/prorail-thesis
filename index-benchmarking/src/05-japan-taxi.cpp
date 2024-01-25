@@ -4,24 +4,24 @@
 
 int main(int argc, char **argv)
 {
-    std::string data_file_0_25m = "../data/japan-taxi/japan-taxi-0_25m.bin";
-    std::string data_file_2_5m = "../data/japan-taxi/japan-taxi-2_5m.bin";
-    std::string data_file_25m = "../data/japan-taxi/japan-taxi-25m.bin";
-    std::string data_file_250m = "../data/japan-taxi/japan-taxi-250m.bin";
+    std::string data_file_0_25m = "../data/taxi/japan-taxi/japan-taxi-0_25m.bin";
+    std::string data_file_2_5m = "../data/taxi/japan-taxi/japan-taxi-2_5m.bin";
+    std::string data_file_25m = "../data/taxi/japan-taxi/japan-taxi-25m.bin";
+    std::string data_file_250m = "../data/taxi/japan-taxi/japan-taxi-250m.bin";
 
     std::vector<std::string> distance_query_files = {
-        "../data/japan-taxi/queries/taxi_distance_0.0001.csv",
-        "../data/japan-taxi/queries/taxi_distance_0.001.csv",
-        "../data/japan-taxi/queries/taxi_distance_0.01.csv",
-        "../data/japan-taxi/queries/taxi_distance_0.1.csv",
-        "../data/japan-taxi/queries/taxi_distance_1.csv",
+        "../data/taxi/japan-taxi/queries/taxi_distance_0.0001.csv",
+        "../data/taxi/japan-taxi/queries/taxi_distance_0.001.csv",
+        "../data/taxi/japan-taxi/queries/taxi_distance_0.01.csv",
+        "../data/taxi/japan-taxi/queries/taxi_distance_0.1.csv",
+        "../data/taxi/japan-taxi/queries/taxi_distance_1.csv",
     };
     std::vector<std::string> range_query_files = {
-        "../data/japan-taxi/queries/taxi_range_0.0001.csv",
-        "../data/japan-taxi/queries/taxi_range_0.001.csv",
-        "../data/japan-taxi/queries/taxi_range_0.01.csv",
-        "../data/japan-taxi/queries/taxi_range_0.1.csv",
-        "../data/japan-taxi/queries/taxi_range_1.csv",
+        "../data/taxi/japan-taxi/queries/taxi_range_0.0001.csv",
+        "../data/taxi/japan-taxi/queries/taxi_range_0.001.csv",
+        "../data/taxi/japan-taxi/queries/taxi_range_0.01.csv",
+        "../data/taxi/japan-taxi/queries/taxi_range_0.1.csv",
+        "../data/taxi/japan-taxi/queries/taxi_range_1.csv",
     };
 
     const std::vector<std::string> fixed_distance_query_file = {distance_query_files[3]};

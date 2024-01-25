@@ -121,6 +121,7 @@ def create_binary(conn, target_file, n_points, transform_settings=None):
     coords = conn.sql(query).fetchnumpy()
     lats = coords['lat']
     lons = coords['lon']
+
     
     if transform_settings is not None:
         lats, lons = transform_efficient(lats, lons, transform_settings)
@@ -205,7 +206,7 @@ def generate_datasets(conn, raw_query_folder, data_folder, name, **settings):
 
 
 if __name__ == '__main__':
-    DATA_FOLDER = Path('data')
+    DATA_FOLDER = Path('data/taxi')
 
     syracuse_settings = {
         'center': (43.054477, -76.144178),
