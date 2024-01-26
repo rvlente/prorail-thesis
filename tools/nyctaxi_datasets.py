@@ -236,8 +236,10 @@ if __name__ == '__main__':
     conn = setup_duckdb(DATA_FOLDER / 'nyc-taxi' / 'raw')
     query_folder = DATA_FOLDER / 'nyc-taxi' / 'queries'
 
-    generate_datasets(conn, None, DATA_FOLDER, 'nyc-taxi')
-    generate_datasets(conn, query_folder, DATA_FOLDER, 'syracuse-taxi', **syracuse_settings)
-    generate_datasets(conn, query_folder, DATA_FOLDER, 'aogaki-taxi', **aogaki_settings)
-    generate_datasets(conn, query_folder, DATA_FOLDER, 'germany-taxi', **germany_settings)
-    generate_datasets(conn, query_folder, DATA_FOLDER, 'japan-taxi', **japan_settings)
+    # generate_datasets(conn, None, DATA_FOLDER, 'nyc-taxi')
+    # generate_datasets(conn, query_folder, DATA_FOLDER, 'syracuse-taxi', **syracuse_settings)
+    # generate_datasets(conn, query_folder, DATA_FOLDER, 'aogaki-taxi', **aogaki_settings)
+    # generate_datasets(conn, query_folder, DATA_FOLDER, 'germany-taxi', **germany_settings)
+    # generate_datasets(conn, query_folder, DATA_FOLDER, 'japan-taxi', **japan_settings)
+
+    transform_settings = _get_transformation_settings(conn, **syracuse_settings)
