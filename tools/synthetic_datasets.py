@@ -1,29 +1,48 @@
 import osmnx  # as antigravity (https://xkcd.com/353/)
 import struct
+import numpy as np
+import geopandas as gpd
+from shapely import Point
 from pathlib import Path
 from pyproj import Transformer
 from nyctaxi_datasets import create_queries
 
 
 def create_binary(target_file, n_points, radius, settings):
+    # Generate road graph.
     G = osmnx.graph_from_point(settings['center'], network_type="drive", dist=radius)
     G = osmnx.projection.project_graph(G, to_crs=settings['crs'])
+
+    # First, uniformly sample a set of points.
     points = osmnx.utils_geo.sample_points(G, n_points)
+    
+    # Compute sampling weights based on squared distance to center.
+    x, y = Transformer.from_crs(4326, settings['crs']).transform(*settings['center'])
+    center_point = Point(y, x) if settings['y_is_easting'] else Point(x, y)
+
+    d = points.distance(center_point)
+    p = d ** -2
+    p = p / np.sum(p)
+
+    # Then, resample using the weights points. This will lead to duplicate points, but it should not be a problem.
+    points = np.random.choice(points, n_points, p=p)
+    points = gpd.GeoDataFrame(geometry=points, crs=settings['crs'])
     points = osmnx.projection.project_gdf(points, to_latlong=True)
 
+    # Write to file.
     with open(target_file, "wb") as f:
-        for p in points:
+        for p in points.geometry:
             f.write(struct.pack("d", p.y)) # lat
             f.write(struct.pack("d", p.x)) # lon
 
 
-def get_transformation_settings(center, crs):
+def get_transformation_settings(center, crs, y_is_easting=False):
     return {
         'crs': crs,
         'center': (302170.38872842223, 64903.128892935325), # generated using _get_transformation_settings
         'scale': 1,
         'transformed_center': Transformer.from_crs(4326, crs).transform(*center),
-        'y_is_easting': False
+        'y_is_easting': y_is_easting
     }
 
 
@@ -38,17 +57,18 @@ if __name__ == '__main__':
         'crs': 32118,
     }
 
+    tokyo_settings = {
+        'center': (35.681471, 139.765617),
+        'crs': 6684,
+        'y_is_easting': True
+    }
+
     delhi_settings = {
         'center': (28.642832, 77.218273),
         'crs': 24378
     }
 
-    tokyo_settings = {
-        'center': (35.681471, 139.765617),
-        'crs': 6684
-    }
-
-    sao_paolo_settings = {
+    saopaolo_settings = {
         'center': (-23.546118, -46.635005),
         'crs': 5641
     }
@@ -56,8 +76,8 @@ if __name__ == '__main__':
     create_binary(DATA_FOLDER / 'nyc' / 'nyc-25m.bin', N_POINTS, RADIUS, nyc_settings)
     create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-25m.bin', N_POINTS, RADIUS, tokyo_settings)
     create_binary(DATA_FOLDER / 'delhi' / 'delhi-25m.bin', N_POINTS, RADIUS, delhi_settings)
-    create_binary(DATA_FOLDER / 'sao-paolo' / 'sao-paolo-25m.bin', N_POINTS, RADIUS, sao_paolo_settings)
+    create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-25m.bin', N_POINTS, RADIUS, saopaolo_settings)
 
     create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'tokyo' / 'queries', get_transformation_settings(**tokyo_settings))
     create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'delhi' / 'queries', get_transformation_settings(**delhi_settings))
-    create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'saopaolo' / 'queries', get_transformation_settings(**sao_paolo_settings))
+    create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'saopaolo' / 'queries', get_transformation_settings(**saopaolo_settings))
