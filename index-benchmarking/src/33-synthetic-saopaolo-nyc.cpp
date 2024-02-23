@@ -14,13 +14,13 @@ int main(int argc, char **argv)
     };
 
     auto strtree_runner = STRtreeExperimentRunner("33__geos_strtree", "EPSG:32118", argv[0]);
-    strtree_runner.run("synthetic-saopaolo-25m", data_file_25m, distance_query_files, range_query_files);
+    strtree_runner.run("synthetic-saopaolo-nyc-25m", data_file_25m, distance_query_files, range_query_files);
 
     auto quadtree_runner = QuadtreeExperimentRunner("33__geos_quadtree", "EPSG:32118", argv[0]);
-    quadtree_runner.run("synthetic-saopaolo-25m", data_file_25m, distance_query_files, range_query_files);
+    quadtree_runner.run("synthetic-saopaolo-nyc-25m", data_file_25m, distance_query_files, range_query_files);
 
     auto s2pointindex_runner = S2PointIndexExperimentRunner("33__s2_pointindex", argv[0]);
-    s2pointindex_runner.run("synthetic-saopaolo-25m", data_file_25m, distance_query_files, range_query_files);
+    s2pointindex_runner.run("synthetic-saopaolo-nyc-25m", data_file_25m, distance_query_files, range_query_files);
 
     return 0;
 }
