@@ -27,19 +27,19 @@ int main(int argc, char **argv)
     const std::vector<std::string> fixed_distance_query_file = {distance_query_files[3]};
     const std::vector<std::string> fixed_range_query_file = {range_query_files[3]};
 
-    auto strtree_runner = STRtreeExperimentRunner("geos_strtree", "EPSG:32118", argv[0]);
+    auto strtree_runner = STRtreeExperimentRunner("11__geos_strtree", "EPSG:32118", argv[0]);
     strtree_runner.run("nyc-taxi-0_25m", data_file_0_25m, fixed_distance_query_file, fixed_range_query_file);
     strtree_runner.run("nyc-taxi-2_5m", data_file_2_5m, fixed_distance_query_file, fixed_range_query_file);
     strtree_runner.run("nyc-taxi-25m", data_file_25m, fixed_distance_query_file, fixed_range_query_file);
     strtree_runner.run("nyc-taxi-250m", data_file_250m, distance_query_files, range_query_files);
 
-    auto quadtree_runner = QuadtreeExperimentRunner("geos_quadtree", "EPSG:32118", argv[0]);
+    auto quadtree_runner = QuadtreeExperimentRunner("11__geos_quadtree", "EPSG:32118", argv[0]);
     quadtree_runner.run("nyc-taxi-0_25m", data_file_0_25m, fixed_distance_query_file, fixed_range_query_file);
     quadtree_runner.run("nyc-taxi-2_5m", data_file_2_5m, fixed_distance_query_file, fixed_range_query_file);
     quadtree_runner.run("nyc-taxi-25m", data_file_25m, fixed_distance_query_file, fixed_range_query_file);
     quadtree_runner.run("nyc-taxi-250m", data_file_250m, distance_query_files, range_query_files);
 
-    auto s2pointindex_runner = S2PointIndexExperimentRunner("s2_pointindex", argv[0]);
+    auto s2pointindex_runner = S2PointIndexExperimentRunner("11__s2_pointindex", argv[0]);
     s2pointindex_runner.run("nyc-taxi-0_25m", data_file_0_25m, fixed_distance_query_file, fixed_range_query_file);
     s2pointindex_runner.run("nyc-taxi-2_5m", data_file_2_5m, fixed_distance_query_file, fixed_range_query_file);
     s2pointindex_runner.run("nyc-taxi-25m", data_file_25m, fixed_distance_query_file, fixed_range_query_file);

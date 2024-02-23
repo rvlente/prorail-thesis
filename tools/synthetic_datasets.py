@@ -7,26 +7,36 @@ from pathlib import Path
 from pyproj import Transformer
 from nyctaxi_datasets import create_queries
 
+# Center of NYC in EPSG:32118, generated using _get_transformation_settings
+NYC_CENTER_CART = (302170.38872842223, 64903.128892935325)
 
-def create_binary(target_file, n_points, radius, settings):
+
+def create_binary(target_file, n_points, radius, settings, to_nyc=False):
     # Generate road graph.
     G = osmnx.graph_from_point(settings['center'], network_type="drive", dist=radius)
     G = osmnx.projection.project_graph(G, to_crs=settings['crs'])
 
     # First, uniformly sample a set of points.
     points = osmnx.utils_geo.sample_points(G, n_points)
-    
-    # Compute sampling weights based on squared distance to center.
-    x, y = Transformer.from_crs(4326, settings['crs']).transform(*settings['center'])
-    center_point = Point(y, x) if settings['y_is_easting'] else Point(x, y)
 
+    # Compute center point.
+    x, y = Transformer.from_crs(4326, settings['crs']).transform(*settings['center'])
+    center_point = Point(y, x) if settings.get('y_is_easting', False) else Point(x, y)
+
+    # Compute sampling weights based on squared distance to center.
     d = points.distance(center_point)
     p = d ** -2
     p = p / np.sum(p)
 
+    # Move the dataset to NYC if desired.
+    if to_nyc:
+        points = points.translate(-center_point.x + NYC_CENTER_CART[0], -center_point.y + NYC_CENTER_CART[1])
+
     # Then, resample using the weights points. This will lead to duplicate points, but it should not be a problem.
     points = np.random.choice(points, n_points, p=p)
-    points = gpd.GeoDataFrame(geometry=points, crs=settings['crs'])
+    
+    # Project to EPSG:4326.
+    points = gpd.GeoDataFrame(geometry=points, crs=32118 if to_nyc else settings['crs'])
     points = osmnx.projection.project_gdf(points, to_latlong=True)
 
     # Write to file.
@@ -36,10 +46,10 @@ def create_binary(target_file, n_points, radius, settings):
             f.write(struct.pack("d", p.x)) # lon
 
 
-def get_transformation_settings(center, crs, y_is_easting=False):
+def get_transformation_settings_compat(center, crs, y_is_easting=False):
     return {
         'crs': crs,
-        'center': (302170.38872842223, 64903.128892935325), # generated using _get_transformation_settings
+        'center': NYC_CENTER_CART,
         'scale': 1,
         'transformed_center': Transformer.from_crs(4326, crs).transform(*center),
         'y_is_easting': y_is_easting
@@ -73,11 +83,15 @@ if __name__ == '__main__':
         'crs': 5641
     }
 
-    create_binary(DATA_FOLDER / 'nyc' / 'nyc-25m.bin', N_POINTS, RADIUS, nyc_settings)
-    create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-25m.bin', N_POINTS, RADIUS, tokyo_settings)
-    create_binary(DATA_FOLDER / 'delhi' / 'delhi-25m.bin', N_POINTS, RADIUS, delhi_settings)
-    create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-25m.bin', N_POINTS, RADIUS, saopaolo_settings)
+    # create_binary(DATA_FOLDER / 'nyc' / 'nyc-25m.bin', N_POINTS, RADIUS, nyc_settings)
+    # create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-25m.bin', N_POINTS, RADIUS, tokyo_settings)
+    # create_binary(DATA_FOLDER / 'delhi' / 'delhi-25m.bin', N_POINTS, RADIUS, delhi_settings)
+    # create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-25m.bin', N_POINTS, RADIUS, saopaolo_settings)
 
-    create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'tokyo' / 'queries', get_transformation_settings(**tokyo_settings))
-    create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'delhi' / 'queries', get_transformation_settings(**delhi_settings))
-    create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'saopaolo' / 'queries', get_transformation_settings(**saopaolo_settings))
+    # create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'tokyo' / 'queries', get_transformation_settings_compat(**tokyo_settings))
+    # create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'delhi' / 'queries', get_transformation_settings_compat(**delhi_settings))
+    # create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'saopaolo' / 'queries', get_transformation_settings_compat(**saopaolo_settings))
+
+    # create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-nyc-25m.bin', N_POINTS, RADIUS, tokyo_settings, True)
+    create_binary(DATA_FOLDER / 'delhi' / 'delhi-nyc-25m.bin', N_POINTS, RADIUS, delhi_settings, True)
+    create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-nyc-25m.bin', N_POINTS, RADIUS, saopaolo_settings, True)
