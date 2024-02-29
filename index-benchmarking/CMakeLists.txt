@@ -13,7 +13,7 @@ add_subdirectory(libs/geos)
 add_subdirectory(libs/s2)
 
 add_executable(exp11 src/11-nyc-taxi.cpp)
-add_executable(exp12 src/12-syracuse-taxi.cpp)
+add_executable(exp12 src/12-shippensburg-taxi.cpp)
 add_executable(exp13 src/13-aogaki-taxi.cpp)
 add_executable(exp14 src/14-germany-taxi.cpp)
 add_executable(exp15 src/15-japan-taxi.cpp)

@@ -12,6 +12,10 @@ NYC_CENTER_CART = (302170.38872842223, 64903.128892935325)
 
 
 def create_binary(target_file, n_points, radius, settings, to_nyc=False):
+    if target_file.exists():
+        print(f'File <{target_file}> exists, skipping...')
+        return
+    
     # Generate road graph.
     G = osmnx.graph_from_point(settings['center'], network_type="drive", dist=radius)
     G = osmnx.projection.project_graph(G, to_crs=settings['crs'])
@@ -69,7 +73,7 @@ if __name__ == '__main__':
 
     tokyo_settings = {
         'center': (35.681471, 139.765617),
-        'crs': 6684,
+        'crs': 6677,
         'y_is_easting': True
     }
 
@@ -80,7 +84,7 @@ if __name__ == '__main__':
 
     saopaolo_settings = {
         'center': (-23.546118, -46.635005),
-        'crs': 5641
+        'crs': 29101
     }
 
     # create_binary(DATA_FOLDER / 'nyc' / 'nyc-25m.bin', N_POINTS, RADIUS, nyc_settings)
@@ -93,5 +97,5 @@ if __name__ == '__main__':
     # create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'saopaolo' / 'queries', get_transformation_settings_compat(**saopaolo_settings))
 
     # create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-nyc-25m.bin', N_POINTS, RADIUS, tokyo_settings, True)
-    create_binary(DATA_FOLDER / 'delhi' / 'delhi-nyc-25m.bin', N_POINTS, RADIUS, delhi_settings, True)
-    create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-nyc-25m.bin', N_POINTS, RADIUS, saopaolo_settings, True)
+    # create_binary(DATA_FOLDER / 'delhi' / 'delhi-nyc-25m.bin', N_POINTS, RADIUS, delhi_settings, True)
+    # create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-nyc-25m.bin', N_POINTS, RADIUS, saopaolo_settings, True)

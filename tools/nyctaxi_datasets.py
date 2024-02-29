@@ -35,22 +35,22 @@ def setup_duckdb(input_folder):
     return conn
 
 
-def _get_transformation_settings(conn, crs, center=None, size=None, y_is_easting=False):
+def _get_transformation_settings(conn, crs, center=None, radius=None, y_is_easting=False):
     tf_cart = Transformer.from_crs(4326, 32118)
     tf_center = Transformer.from_crs(4326, crs)
 
     coords = conn.sql('SELECT lat, lon FROM nyctaxi USING SAMPLE 100000;').fetchnumpy()
     
     xx, yy = tf_cart.transform(coords['lat'], coords['lon'])
-
-    old_size = max(np.max(xx) - np.min(xx), np.max(yy) - np.min(yy))
     x_mean = np.mean(xx)
     y_mean = np.mean(yy)
 
-    if size is None:
+    if radius is None:
         scale = 1
     else:
-        scale = size / old_size
+        # Compute the radius of the original dataset.
+        r = np.max(np.sqrt(np.square(xx - x_mean) + np.square(yy - y_mean)))
+        scale = radius / r
 
     transformed_x_mean, transformed_y_mean = tf_center.transform(*center)
 
@@ -197,9 +197,9 @@ def generate_datasets(conn, raw_query_folder, data_folder, name, **settings):
         transform_settings = _get_transformation_settings(conn, **settings)
 
     create_binary(conn, data_folder / name / f'{name}-0_25m.bin', 250_000, transform_settings)
-    create_binary(conn, data_folder / name / f'{name}-2_5m.bin', 2_500_000, transform_settings)
-    create_binary(conn, data_folder / name / f'{name}-25m.bin', 25_000_000, transform_settings)
-    create_binary(conn, data_folder / name / f'{name}-250m.bin', 250_000_000, transform_settings)
+    # create_binary(conn, data_folder / name / f'{name}-2_5m.bin', 2_500_000, transform_settings)
+    # create_binary(conn, data_folder / name / f'{name}-25m.bin', 25_000_000, transform_settings)
+    # create_binary(conn, data_folder / name / f'{name}-250m.bin', 250_000_000, transform_settings)
 
     if raw_query_folder is not None:
         create_queries(raw_query_folder, data_folder / name / 'queries', transform_settings)
@@ -208,38 +208,36 @@ def generate_datasets(conn, raw_query_folder, data_folder, name, **settings):
 if __name__ == '__main__':
     DATA_FOLDER = Path('data/taxi')
 
-    syracuse_settings = {
-        'center': (43.054477, -76.144178),
+    shippensburg_settings = {
+        'center': (40.112385, -77.519584),
         'crs': 32118,
     }
 
     aogaki_settings = {
         'center': (35.263921, 134.999230),
-        'crs': 6684,
+        'crs': 6673,
         'y_is_easting': True
     }
 
     germany_settings = {
         'center': (50.940709, 6.9575126),
-        'size': 600_000,
+        'radius': 300_000,
         'crs': 4839,
         'y_is_easting': True 
     }
 
     japan_settings = {
         'center': (35.263921, 134.999230),
-        'size': 600_000,
-        'crs': 6684,
-        'y_is_easting': True 
+        'radius': 300_000,
+        'crs': 6673,
+        'y_is_easting': True
     }
 
     conn = setup_duckdb(DATA_FOLDER / 'nyc-taxi' / 'raw')
     query_folder = DATA_FOLDER / 'nyc-taxi' / 'queries'
 
     # generate_datasets(conn, None, DATA_FOLDER, 'nyc-taxi')
-    # generate_datasets(conn, query_folder, DATA_FOLDER, 'syracuse-taxi', **syracuse_settings)
+    # generate_datasets(conn, query_folder, DATA_FOLDER, 'shippensburg-taxi', **shippensburg_settings)
     # generate_datasets(conn, query_folder, DATA_FOLDER, 'aogaki-taxi', **aogaki_settings)
-    # generate_datasets(conn, query_folder, DATA_FOLDER, 'germany-taxi', **germany_settings)
+    generate_datasets(conn, query_folder, DATA_FOLDER, 'germany-taxi', **germany_settings)
     # generate_datasets(conn, query_folder, DATA_FOLDER, 'japan-taxi', **japan_settings)
-
-    transform_settings = _get_transformation_settings(conn, **syracuse_settings)
