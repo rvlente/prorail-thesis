@@ -7,10 +7,10 @@ int main(int argc, char **argv)
     std::string data_file_25m = "../data/synthetic/tokyo/tokyo-25m.bin";
 
     std::vector<std::string> distance_query_files = {
-        "../data/synthetic/tokyo/queries/taxi_distance_0.1.csv",
+        "../data/synthetic/tokyo/queries/synthetic_distance_0.1.csv",
     };
     std::vector<std::string> range_query_files = {
-        "../data/synthetic/tokyo/queries/taxi_range_0.1.csv",
+        "../data/synthetic/tokyo/queries/synthetic_range_0.1.csv",
     };
 
     auto strtree_runner = STRtreeExperimentRunner("22__geos_strtree", "EPSG:32118", argv[0]);

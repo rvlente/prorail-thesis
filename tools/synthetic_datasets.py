@@ -5,22 +5,18 @@ import geopandas as gpd
 from shapely import Point
 from pathlib import Path
 from pyproj import Transformer
-from nyctaxi_datasets import create_queries
-
-# Center of NYC in EPSG:32118, generated using _get_transformation_settings
-NYC_CENTER_CART = (302170.38872842223, 64903.128892935325)
+import multiprocessing
+from functools import partial
 
 
-def create_binary(target_file, n_points, radius, settings, to_nyc=False):
-    if target_file.exists():
-        print(f'File <{target_file}> exists, skipping...')
-        return
-    
+def create_binary(bin_file, n_points, radius, settings):
     # Generate road graph.
+    print("Generating graph...") 
     G = osmnx.graph_from_point(settings['center'], network_type="drive", dist=radius)
     G = osmnx.projection.project_graph(G, to_crs=settings['crs'])
 
     # First, uniformly sample a set of points.
+    print("Sampling points...")
     points = osmnx.utils_geo.sample_points(G, n_points)
 
     # Compute center point.
@@ -29,35 +25,118 @@ def create_binary(target_file, n_points, radius, settings, to_nyc=False):
 
     # Compute sampling weights based on squared distance to center.
     d = points.distance(center_point)
-    p = d ** -2
+    d /= np.max(d)
+    p = 1 - np.tanh(d * 10 - 2)
     p = p / np.sum(p)
 
-    # Move the dataset to NYC if desired.
-    if to_nyc:
-        points = points.translate(-center_point.x + NYC_CENTER_CART[0], -center_point.y + NYC_CENTER_CART[1])
-
-    # Then, resample using the weights points. This will lead to duplicate points, but it should not be a problem.
+    # Then, resample using the weights points. This will lead to duplicate points.
     points = np.random.choice(points, n_points, p=p)
     
     # Project to EPSG:4326.
-    points = gpd.GeoDataFrame(geometry=points, crs=32118 if to_nyc else settings['crs'])
-    points = osmnx.projection.project_gdf(points, to_latlong=True)
+    print("Projecting points to EPSG:4326...")
+    points_gdf = gpd.GeoDataFrame(geometry=points, crs=settings['crs'])
+    points_gdf_proj = osmnx.projection.project_gdf(points_gdf, to_latlong=True)
 
     # Write to file.
-    with open(target_file, "wb") as f:
-        for p in points.geometry:
+    print(f"Writing points to {bin_file}...")
+    with open(bin_file, "wb") as f:
+        for p in points_gdf_proj.geometry:
             f.write(struct.pack("d", p.y)) # lat
             f.write(struct.pack("d", p.x)) # lon
+    
+    return points_gdf.geometry
 
 
-def get_transformation_settings_compat(center, crs, y_is_easting=False):
-    return {
-        'crs': crs,
-        'center': NYC_CENTER_CART,
-        'scale': 1,
-        'transformed_center': Transformer.from_crs(4326, crs).transform(*center),
-        'y_is_easting': y_is_easting
-    }
+def _create_distance_query(points, target_n_points):
+    # Sample point from dataset.
+    query_point = np.random.choice(points)
+
+    # Compute distances to query point.
+    point_distances = points.distance(query_point)
+    point_distances = np.sort(point_distances)
+
+    # To get a distance that includes N points, take the Nth distance from the array. 
+    query_distance = point_distances[target_n_points]
+
+    return query_point.x, query_point.y, query_distance
+
+
+def _create_range_query(points, xx, yy, target_n_points):
+    # Sample point from dataset.
+    query_center = np.random.choice(points)
+    xc, yc = query_center.x, query_center.y
+
+     # Compute distances to query center.
+    point_distances = points.distance(query_center)
+    point_distances = np.sort(point_distances)
+
+    # Create a rectangle from opposite points on the circle.
+    query_point_a = points[target_n_points]
+    xa, ya = query_point_a.x, query_point_a.y
+    xb, yb = xc - (xa - xc),  yc - (ya - yc)
+
+    xa, xb = np.sort([xa, xb])
+    ya, yb = np.sort([ya, yb])
+
+    # Refine query rectangle until the target number of points are contained.
+    n_points = np.sum((xa <= xx) & (xx <= xb) & (ya <= yy) & (yy <= yb))
+
+    if n_points <= target_n_points:
+        while n_points < target_n_points:
+            xa -= 100
+            ya -= 100
+            xb += 100
+            yb += 100
+            n_points = np.sum((xa <= xx) & (xx <= xb) & (ya <= yy) & (yy <= yb))
+    else:
+        while n_points > target_n_points:
+            xa += 100
+            ya += 100
+            xb -= 100
+            yb -= 100
+            n_points = np.sum((xa <= xx) & (xx <= xb) & (ya <= yy) & (yy <= yb))
+    
+    return xa, ya, xb, yb
+
+
+def create_distance_queries(points, target_file, n_queries, selectivity, settings):
+    print("Generating distance queries...")
+
+    target_n_points = np.ceil(selectivity * len(points)).astype(int)
+
+    with multiprocessing.get_context("fork").Pool() as pool:
+        dqueries = pool.starmap(partial(_create_distance_query, points, target_n_points), [() for _ in range(n_queries)])
+    
+    # Project query points and write to file.
+    print(f"Writing distance queries to {target_file}...")
+    t = Transformer.from_crs(settings['crs'], 4326)
+
+    with open(target_file, "w") as f:
+        for x, y, d in dqueries:
+            x, y = t.transform(x, y)
+            f.write(f"{x},{y},{d}\n")
+
+
+def create_range_queries(points, target_file, n_queries, selectivity, settings):
+    print("Generating range queries...")
+
+    target_n_points = np.ceil(selectivity * len(points)).astype(int)
+    
+    xx = np.array([p.x for p in points])
+    yy = np.array([p.y for p in points])
+
+    with multiprocessing.get_context("fork").Pool() as pool:
+        rqueries = pool.starmap(partial(_create_range_query, points, xx, yy, target_n_points), [() for _ in range(n_queries)])
+
+    # Project query points and write to file.
+    print(f"Writing range queries to {target_file}...")
+    t = Transformer.from_crs(settings['crs'], 4326)
+
+    with open(target_file, "w") as f:
+        for xa, ya, xb, yb in rqueries:
+            xa, ya = t.transform(xa, ya)
+            xb, yb = t.transform(xb, yb)
+            f.write(f"{xa},{ya},{xb},{yb}\n")
 
 
 if __name__ == '__main__':
@@ -65,6 +144,8 @@ if __name__ == '__main__':
 
     N_POINTS = 25_000_000
     RADIUS = 10_000
+    N_QUERIES = 10_000
+    QUERY_SELECTIVITY = 0.1
 
     nyc_settings = {
         'center': (40.747659, -73.986230),
@@ -87,15 +168,18 @@ if __name__ == '__main__':
         'crs': 29101
     }
 
-    # create_binary(DATA_FOLDER / 'nyc' / 'nyc-25m.bin', N_POINTS, RADIUS, nyc_settings)
-    # create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-25m.bin', N_POINTS, RADIUS, tokyo_settings)
-    # create_binary(DATA_FOLDER / 'delhi' / 'delhi-25m.bin', N_POINTS, RADIUS, delhi_settings)
-    # create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-25m.bin', N_POINTS, RADIUS, saopaolo_settings)
+    points = create_binary(DATA_FOLDER / 'nyc' / 'nyc-25m.bin', N_POINTS, RADIUS, nyc_settings)
+    create_distance_queries(points, DATA_FOLDER / 'nyc'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, nyc_settings)
+    create_range_queries(points, DATA_FOLDER / 'nyc'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, nyc_settings)
 
-    # create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'tokyo' / 'queries', get_transformation_settings_compat(**tokyo_settings))
-    # create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'delhi' / 'queries', get_transformation_settings_compat(**delhi_settings))
-    # create_queries(DATA_FOLDER / 'nyc' / 'queries', DATA_FOLDER / 'saopaolo' / 'queries', get_transformation_settings_compat(**saopaolo_settings))
+    points = create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-25m.bin', N_POINTS, RADIUS, tokyo_settings)
+    create_distance_queries(points, DATA_FOLDER / 'tokyo'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, tokyo_settings)
+    create_range_queries(points, DATA_FOLDER / 'tokyo'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, tokyo_settings)
 
-    # create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-nyc-25m.bin', N_POINTS, RADIUS, tokyo_settings, True)
-    # create_binary(DATA_FOLDER / 'delhi' / 'delhi-nyc-25m.bin', N_POINTS, RADIUS, delhi_settings, True)
-    # create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-nyc-25m.bin', N_POINTS, RADIUS, saopaolo_settings, True)
+    points = create_binary(DATA_FOLDER / 'delhi' / 'delhi-25m.bin', N_POINTS, RADIUS, delhi_settings)
+    create_distance_queries(points, DATA_FOLDER / 'delhi'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, delhi_settings)
+    create_range_queries(points, DATA_FOLDER / 'delhi'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, delhi_settings)
+
+    points = create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-25m.bin', N_POINTS, RADIUS, saopaolo_settings)
+    create_distance_queries(points, DATA_FOLDER / 'saopaolo'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, saopaolo_settings)
+    create_range_queries(points, DATA_FOLDER / 'saopaolo'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, saopaolo_settings)
