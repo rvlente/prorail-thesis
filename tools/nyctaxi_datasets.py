@@ -99,7 +99,7 @@ def transform_efficient(lats, lons, transform_settings):
     """
     batches = np.stack([np.array_split(lats, 1000), np.array_split(lons, 1000)], axis=1)
 
-    with multiprocessing.get_context("fork").Pool() as pool:
+    with multiprocessing.get_context("spawn").Pool() as pool:
         result = pool.map(partial(_transform_job, **transform_settings), batches)
     
     return np.concatenate(result, axis=1)
@@ -196,13 +196,14 @@ def generate_datasets(conn, raw_query_folder, data_folder, name, **settings):
     else:
         transform_settings = _get_transformation_settings(conn, **settings)
 
-    create_binary(conn, data_folder / name / f'{name}-0_25m.bin', 250_000, transform_settings)
+    # create_binary(conn, data_folder / name / f'{name}-0_25m.bin', 250_000, transform_settings)
     # create_binary(conn, data_folder / name / f'{name}-2_5m.bin', 2_500_000, transform_settings)
     # create_binary(conn, data_folder / name / f'{name}-25m.bin', 25_000_000, transform_settings)
     # create_binary(conn, data_folder / name / f'{name}-250m.bin', 250_000_000, transform_settings)
+    create_binary(conn, data_folder / name / f'{name}-10m.bin', 10_000_000, transform_settings)
 
-    if raw_query_folder is not None:
-        create_queries(raw_query_folder, data_folder / name / 'queries', transform_settings)
+    # if raw_query_folder is not None:
+    #     create_queries(raw_query_folder, data_folder / name / 'queries', transform_settings)
 
 
 if __name__ == '__main__':
@@ -236,8 +237,8 @@ if __name__ == '__main__':
     conn = setup_duckdb(DATA_FOLDER / 'nyc-taxi' / 'raw')
     query_folder = DATA_FOLDER / 'nyc-taxi' / 'queries'
 
-    # generate_datasets(conn, None, DATA_FOLDER, 'nyc-taxi')
+    generate_datasets(conn, None, DATA_FOLDER, 'nyc-taxi')
     # generate_datasets(conn, query_folder, DATA_FOLDER, 'shippensburg-taxi', **shippensburg_settings)
     # generate_datasets(conn, query_folder, DATA_FOLDER, 'aogaki-taxi', **aogaki_settings)
-    generate_datasets(conn, query_folder, DATA_FOLDER, 'germany-taxi', **germany_settings)
+    # generate_datasets(conn, query_folder, DATA_FOLDER, 'germany-taxi', **germany_settings)
     # generate_datasets(conn, query_folder, DATA_FOLDER, 'japan-taxi', **japan_settings)

@@ -7,6 +7,8 @@ from pathlib import Path
 from pyproj import Transformer
 import multiprocessing
 from functools import partial
+from itertools import islice
+from tqdm import tqdm
 
 
 def create_binary(bin_file, n_points, radius, settings):
@@ -34,79 +36,59 @@ def create_binary(bin_file, n_points, radius, settings):
     
     # Project to EPSG:4326.
     print("Projecting points to EPSG:4326...")
-    points_gdf = gpd.GeoDataFrame(geometry=points, crs=settings['crs'])
-    points_gdf_proj = osmnx.projection.project_gdf(points_gdf, to_latlong=True)
+    points = gpd.GeoDataFrame(geometry=points, crs=settings['crs'])
+    points = osmnx.projection.project_gdf(points, to_latlong=True)
 
     # Write to file.
     print(f"Writing points to {bin_file}...")
     with open(bin_file, "wb") as f:
-        for p in points_gdf_proj.geometry:
+        for p in points.geometry:
             f.write(struct.pack("d", p.y)) # lat
             f.write(struct.pack("d", p.x)) # lon
-    
-    return points_gdf.geometry
 
 
-def _create_distance_query(points, target_n_points):
-    # Sample point from dataset.
-    query_point = np.random.choice(points)
+def _parse_points(file, limit):
+    DSIZE = struct.calcsize("d")
+
+    def _yield_doubles():
+        with open(file, 'rb') as f:
+            while chunk := f.read(DSIZE):
+                yield struct.unpack("d", chunk)[0]
+
+    coords = list(islice(_yield_doubles(), limit))
+    lats = coords[::2]
+    lons = coords[1::2]
+    return lats, lons
+
+
+def _create_distance_query(xx, yy, n, q):
+    points = np.stack([xx, yy], 1)
 
     # Compute distances to query point.
-    point_distances = points.distance(query_point)
+    point_distances = np.linalg.norm(q - points, axis=1)
     point_distances = np.sort(point_distances)
 
     # To get a distance that includes N points, take the Nth distance from the array. 
-    query_distance = point_distances[target_n_points]
-
-    return query_point.x, query_point.y, query_distance
+    return q[0], q[1], point_distances[n]
 
 
-def _create_range_query(points, xx, yy, target_n_points):
-    # Sample point from dataset.
-    query_center = np.random.choice(points)
-    xc, yc = query_center.x, query_center.y
+def create_distance_queries(bin_file, target_file, n_queries, selectivity, settings):
+    print(f"Reading points from {bin_file}...")
+    xx, yy = _parse_points(bin_file, 100_000)
 
-     # Compute distances to query center.
-    point_distances = points.distance(query_center)
-    point_distances = np.sort(point_distances)
+    print(f"Projecting points to CRS {settings['crs']}...")
+    xx, yy = Transformer.from_crs(4326, settings['crs']).transform(xx, yy)
 
-    # Create a rectangle from opposite points on the circle.
-    query_point_a = points[target_n_points]
-    xa, ya = query_point_a.x, query_point_a.y
-    xb, yb = xc - (xa - xc),  yc - (ya - yc)
-
-    xa, xb = np.sort([xa, xb])
-    ya, yb = np.sort([ya, yb])
-
-    # Refine query rectangle until the target number of points are contained.
-    n_points = np.sum((xa <= xx) & (xx <= xb) & (ya <= yy) & (yy <= yb))
-
-    if n_points <= target_n_points:
-        while n_points < target_n_points:
-            xa -= 100
-            ya -= 100
-            xb += 100
-            yb += 100
-            n_points = np.sum((xa <= xx) & (xx <= xb) & (ya <= yy) & (yy <= yb))
-    else:
-        while n_points > target_n_points:
-            xa += 100
-            ya += 100
-            xb -= 100
-            yb -= 100
-            n_points = np.sum((xa <= xx) & (xx <= xb) & (ya <= yy) & (yy <= yb))
-    
-    return xa, ya, xb, yb
-
-
-def create_distance_queries(points, target_file, n_queries, selectivity, settings):
     print("Generating distance queries...")
+    n = np.ceil(selectivity * len(xx)).astype(int)
 
-    target_n_points = np.ceil(selectivity * len(points)).astype(int)
+    points = np.stack([xx, yy], 1)
+    qi = np.random.choice(len(points), n_queries)
+    qs = points[qi]
 
-    with multiprocessing.get_context("fork").Pool() as pool:
-        dqueries = pool.starmap(partial(_create_distance_query, points, target_n_points), [() for _ in range(n_queries)])
-    
+    with multiprocessing.get_context("spawn").Pool() as pool:
+        dqueries = list(tqdm(pool.imap(partial(_create_distance_query, xx, yy, n), qs, 10), total=len(qs)))
+
     # Project query points and write to file.
     print(f"Writing distance queries to {target_file}...")
     t = Transformer.from_crs(settings['crs'], 4326)
@@ -117,16 +99,35 @@ def create_distance_queries(points, target_file, n_queries, selectivity, setting
             f.write(f"{x},{y},{d}\n")
 
 
-def create_range_queries(points, target_file, n_queries, selectivity, settings):
-    print("Generating range queries...")
+def _create_range_query(xx, yy, n, q):
+    xa, ya = q
+    xb, yb = xa, ya
 
-    target_n_points = np.ceil(selectivity * len(points)).astype(int)
+    while np.sum((xa <= xx) & (xx <= xb) & (ya <= yy) & (yy <= yb)) < n:
+        xa -= 10
+        ya -= 10
+        xb += 10
+        yb += 10
     
-    xx = np.array([p.x for p in points])
-    yy = np.array([p.y for p in points])
+    return xa, ya, xb, yb
 
-    with multiprocessing.get_context("fork").Pool() as pool:
-        rqueries = pool.starmap(partial(_create_range_query, points, xx, yy, target_n_points), [() for _ in range(n_queries)])
+
+def create_range_queries(bin_file, target_file, n_queries, selectivity, settings):
+    print(f"Reading points from {bin_file}...")
+    xx, yy = _parse_points(bin_file, 100_000)
+
+    print(f"Projecting points to CRS {settings['crs']}...")
+    xx, yy = Transformer.from_crs(4326, settings['crs']).transform(xx, yy)
+
+    print("Generating range queries...")
+    n = np.ceil(selectivity * len(xx)).astype(int)
+
+    points = np.stack([xx, yy], 1)
+    qi = np.random.choice(len(points), n_queries)
+    qs = points[qi]
+
+    with multiprocessing.get_context("spawn").Pool() as pool:
+        rqueries = list(tqdm(pool.imap(partial(_create_range_query, xx, yy, n), qs, 10), total=len(qs)))
 
     # Project query points and write to file.
     print(f"Writing range queries to {target_file}...")
@@ -142,10 +143,10 @@ def create_range_queries(points, target_file, n_queries, selectivity, settings):
 if __name__ == '__main__':
     DATA_FOLDER = Path('data/synthetic')
 
-    N_POINTS = 25_000_000
+    N_POINTS = 10_000_000
     RADIUS = 10_000
     N_QUERIES = 10_000
-    QUERY_SELECTIVITY = 0.1
+    QUERY_SELECTIVITY = 0.001 # 0.1%
 
     nyc_settings = {
         'center': (40.747659, -73.986230),
@@ -168,18 +169,18 @@ if __name__ == '__main__':
         'crs': 29101
     }
 
-    points = create_binary(DATA_FOLDER / 'nyc' / 'nyc-25m.bin', N_POINTS, RADIUS, nyc_settings)
-    create_distance_queries(points, DATA_FOLDER / 'nyc'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, nyc_settings)
-    create_range_queries(points, DATA_FOLDER / 'nyc'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, nyc_settings)
+    create_binary(DATA_FOLDER / 'nyc' / 'nyc-10m.bin', N_POINTS, RADIUS, nyc_settings)
+    create_distance_queries(DATA_FOLDER / 'nyc' / 'nyc-10m.bin', DATA_FOLDER / 'nyc'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, nyc_settings)
+    create_range_queries(DATA_FOLDER / 'nyc' / 'nyc-10m.bin', DATA_FOLDER / 'nyc'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, nyc_settings)
 
-    points = create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-25m.bin', N_POINTS, RADIUS, tokyo_settings)
-    create_distance_queries(points, DATA_FOLDER / 'tokyo'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, tokyo_settings)
-    create_range_queries(points, DATA_FOLDER / 'tokyo'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, tokyo_settings)
+    create_binary(DATA_FOLDER / 'tokyo' / 'tokyo-10m.bin', N_POINTS, RADIUS, tokyo_settings)
+    create_distance_queries(DATA_FOLDER / 'tokyo' / 'tokyo-10m.bin', DATA_FOLDER / 'tokyo'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, tokyo_settings)
+    create_range_queries(DATA_FOLDER / 'tokyo' / 'tokyo-10m.bin', DATA_FOLDER / 'tokyo'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, tokyo_settings)
 
-    points = create_binary(DATA_FOLDER / 'delhi' / 'delhi-25m.bin', N_POINTS, RADIUS, delhi_settings)
-    create_distance_queries(points, DATA_FOLDER / 'delhi'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, delhi_settings)
-    create_range_queries(points, DATA_FOLDER / 'delhi'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, delhi_settings)
+    create_binary(DATA_FOLDER / 'delhi' / 'delhi-10m.bin', N_POINTS, RADIUS, delhi_settings)
+    create_distance_queries(DATA_FOLDER / 'delhi' / 'delhi-10m.bin', DATA_FOLDER / 'delhi'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, delhi_settings)
+    create_range_queries(DATA_FOLDER / 'delhi' / 'delhi-10m.bin', DATA_FOLDER / 'delhi'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, delhi_settings)
 
-    points = create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-25m.bin', N_POINTS, RADIUS, saopaolo_settings)
-    create_distance_queries(points, DATA_FOLDER / 'saopaolo'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, saopaolo_settings)
-    create_range_queries(points, DATA_FOLDER / 'saopaolo'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, saopaolo_settings)
+    create_binary(DATA_FOLDER / 'saopaolo' / 'saopaolo-10m.bin', N_POINTS, RADIUS, saopaolo_settings)
+    create_distance_queries(DATA_FOLDER / 'saopaolo' / 'saopaolo-10m.bin', DATA_FOLDER / 'saopaolo'/ 'queries' / 'synthetic_distance_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, saopaolo_settings)
+    create_range_queries(DATA_FOLDER / 'saopaolo' / 'saopaolo-10m.bin', DATA_FOLDER / 'saopaolo'/ 'queries' / 'synthetic_range_0.1.csv', N_QUERIES, QUERY_SELECTIVITY, saopaolo_settings)
