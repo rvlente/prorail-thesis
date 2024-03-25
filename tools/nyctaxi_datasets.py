@@ -196,14 +196,14 @@ def generate_datasets(conn, raw_query_folder, data_folder, name, **settings):
     else:
         transform_settings = _get_transformation_settings(conn, **settings)
 
-    # create_binary(conn, data_folder / name / f'{name}-0_25m.bin', 250_000, transform_settings)
-    # create_binary(conn, data_folder / name / f'{name}-2_5m.bin', 2_500_000, transform_settings)
-    # create_binary(conn, data_folder / name / f'{name}-25m.bin', 25_000_000, transform_settings)
-    # create_binary(conn, data_folder / name / f'{name}-250m.bin', 250_000_000, transform_settings)
-    create_binary(conn, data_folder / name / f'{name}-10m.bin', 10_000_000, transform_settings)
+    create_binary(conn, data_folder / name / f'{name}-0_25m.bin', 250_000, transform_settings)
+    create_binary(conn, data_folder / name / f'{name}-2_5m.bin', 2_500_000, transform_settings)
+    create_binary(conn, data_folder / name / f'{name}-25m.bin', 25_000_000, transform_settings)
+    create_binary(conn, data_folder / name / f'{name}-250m.bin', 250_000_000, transform_settings)
+    # create_binary(conn, data_folder / name / f'{name}-10m.bin', 10_000_000, transform_settings)
 
-    # if raw_query_folder is not None:
-    #     create_queries(raw_query_folder, data_folder / name / 'queries', transform_settings)
+    if raw_query_folder is not None:
+        create_queries(raw_query_folder, data_folder / name / 'queries', transform_settings)
 
 
 if __name__ == '__main__':
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     query_folder = DATA_FOLDER / 'nyc-taxi' / 'queries'
 
     generate_datasets(conn, None, DATA_FOLDER, 'nyc-taxi')
-    # generate_datasets(conn, query_folder, DATA_FOLDER, 'shippensburg-taxi', **shippensburg_settings)
-    # generate_datasets(conn, query_folder, DATA_FOLDER, 'aogaki-taxi', **aogaki_settings)
-    # generate_datasets(conn, query_folder, DATA_FOLDER, 'germany-taxi', **germany_settings)
-    # generate_datasets(conn, query_folder, DATA_FOLDER, 'japan-taxi', **japan_settings)
+    generate_datasets(conn, query_folder, DATA_FOLDER, 'shippensburg-taxi', **shippensburg_settings)
+    generate_datasets(conn, query_folder, DATA_FOLDER, 'aogaki-taxi', **aogaki_settings)
+    generate_datasets(conn, query_folder, DATA_FOLDER, 'germany-taxi', **germany_settings)
+    generate_datasets(conn, query_folder, DATA_FOLDER, 'japan-taxi', **japan_settings)
