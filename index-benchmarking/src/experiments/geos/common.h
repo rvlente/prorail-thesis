@@ -107,7 +107,7 @@ private:
 
             index->query(&rectangle, candidates);
 
-            for (const auto &candidate : result)
+            for (const auto &candidate : candidates)
             {
                 auto point = static_cast<geos::geom::Point *>(candidate);
                 if (point->isWithinDistance(target_point, distance))
@@ -139,11 +139,20 @@ private:
 
         for (size_t i = 0; i < queries.size(); i++)
         {
-            std::vector<void *> result;
-            index->query(&queries[i].range, result);
+            std::vector<geos::geom::Point *> result;
+            std::vector<void *> candidates;
 
-            uint64_t res_size = result.size();
-            result.clear();
+            index->query(&queries[i].range, candidates);
+            auto target_range = _factory->toGeometry(&queries[i].range);
+
+            for (const auto &candidate : candidates)
+            {
+                auto point = static_cast<geos::geom::Point *>(candidate);
+                if (point->within(target_range.get()))
+                {
+                    result.push_back(point);
+                }
+            }
 
             auto current_time = std::chrono::high_resolution_clock::now();
             auto seconds = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
