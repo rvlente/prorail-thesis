@@ -12,6 +12,8 @@ from tqdm import tqdm
 
 
 def create_binary(bin_file, n_points, radius, settings):
+    bin_file.parent.mkdir(parents=True, exist_ok=True)
+
     # Generate road graph.
     print("Generating graph...") 
     G = osmnx.graph_from_point(settings['center'], network_type="drive", dist=radius)
@@ -73,6 +75,8 @@ def _create_distance_query(xx, yy, n, q):
 
 
 def create_distance_queries(bin_file, target_file, n_queries, selectivity, settings):
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+
     print(f"Reading points from {bin_file}...")
     xx, yy = _parse_points(bin_file, 100_000)
 
@@ -113,6 +117,8 @@ def _create_range_query(xx, yy, n, q):
 
 
 def create_range_queries(bin_file, target_file, n_queries, selectivity, settings):
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+    
     print(f"Reading points from {bin_file}...")
     xx, yy = _parse_points(bin_file, 100_000)
 

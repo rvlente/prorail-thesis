@@ -1,15 +1,5 @@
 """
 generate-nyctaxi.py
-
-This script provides functions to download the 2009-2010 NYC TLC Taxi dataset and write 
-it to either GeoPackage or binary format.
-
-Example usage:
-
-    python -i generate-nyctaxi.py
-    >>> DATA_FOLDER = Path('data/nyc-taxi')
-    >>> download_files(DATA_FOLDER / 'raw')
-    >>> create_binary(DATA_FOLDER / 'raw', DATA_FOLDER / 'nyc-taxi-30m.bin', 30_000_000)
 """
 
 import duckdb
@@ -23,6 +13,18 @@ import multiprocessing
 
 
 def setup_duckdb(input_folder):
+    conn = duckdb.connect(database=":memory:", read_only=False)
+
+    if not (input_folder / 'nyc-taxi-rides.parquet').exists():
+        copy_query = f"""
+        COPY (
+            SELECT * FROM read_csv('{input_folder}/*_rides.csv', header=False, columns={{"lat": "DOUBLE", "lon": "DOUBLE"}})
+            WHERE lat BETWEEN 40.50 AND 40.95 AND lon BETWEEN -74.25 AND -73.65
+        ) TO '{input_folder}/nyc-taxi-rides.parquet' (FORMAT 'parquet');
+        """
+
+        conn.execute(copy_query)
+
     create_data_query = f"""
     DROP TABLE IF EXISTS nyctaxi;
 
@@ -30,7 +32,6 @@ def setup_duckdb(input_folder):
     SELECT * FROM '{input_folder}/nyc-taxi-rides.parquet';
     """
 
-    conn = duckdb.connect(database=":memory:", read_only=False)
     conn.execute(create_data_query)
     return conn
 
@@ -114,6 +115,8 @@ def create_binary(conn, target_file, n_points, transform_settings=None):
         print(f'File <{target_file}> exists, skipping...')
         return
 
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+
     print(f'Creating data file <{target_file}>...')
     start = time.time()
 
@@ -136,6 +139,8 @@ def create_binary(conn, target_file, n_points, transform_settings=None):
 
 
 def create_queries(raw_folder, target_folder, transform_settings):
+    target_folder.mkdir(parents=True, exist_ok=True)
+
     for qf in raw_folder.glob('*_distance_*.csv'):
         target_file = target_folder / qf.name
         if target_file.exists():

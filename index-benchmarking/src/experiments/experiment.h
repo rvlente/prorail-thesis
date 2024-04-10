@@ -63,6 +63,7 @@ public:
         std::cout << "Building index..." << std::endl;
 
         auto hp_name = "tmp/" + full_name; // this causes the dumps to be written to the tmp/ folder.
+
         HeapProfilerStart(hp_name.c_str());
 
         ProgressTracker pt_build_index;
@@ -83,8 +84,16 @@ public:
                       << " | awk -F ' +' '{ print $5 }'";                     // extract memory allocation field
 
         auto index_size = exec(pprof_command.str().c_str());
-        index_size.pop_back(); // remove new-line at the end
 
+        if (index_size.empty())
+        {
+            index_size = "-1";
+        }
+        else
+        {
+            index_size.pop_back(); // remove new-line at the end
+        }
+        
         // 2. Execute queries
 
         std::vector<float> rquery_throughputs;
